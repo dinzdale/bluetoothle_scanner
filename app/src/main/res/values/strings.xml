@@ -4,4 +4,5 @@
     <string name="device_address">"Device Address: %1$s"</string>
     <string name="power_level">"RSSI: %1$d"</string>
     <string name="connectable">"Connectable: %1$d"</string>
+    <string name="seekbar_label">"MINUTES: %1$d"</string>
 </resources>
