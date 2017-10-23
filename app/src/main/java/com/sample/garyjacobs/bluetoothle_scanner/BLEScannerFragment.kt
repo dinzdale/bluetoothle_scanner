@@ -60,7 +60,9 @@ class BLEScannerFragment : Fragment() {
         val linearLayoutManager = LinearLayoutManager(this.activity)
         linearLayoutManager.orientation = LinearLayoutCompat.VERTICAL
         scannedListView.layoutManager = linearLayoutManager
-        scannedListView.adapter = MyListAdapter(scanRecords)
+        scannedListView.adapter = MyListAdapter(scanRecords, ListItemClickListener(scannedListView))
+
+
 
         setScanButtonLabel(scanning)
 
@@ -110,6 +112,7 @@ class BLEScannerFragment : Fragment() {
             }
         }
     }
+
 
     val seekBarListener = object : SeekBar.OnSeekBarChangeListener {
         override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
@@ -213,6 +216,17 @@ class BLEScannerFragment : Fragment() {
 
     }
 
+    class ListItemClickListener(val theList: RecyclerView) : View.OnClickListener {
+        override fun onClick(view: View?) {
+            view?.let {
+                val position = theList.getChildAdapterPosition(view)
+                val adapter = theList.adapter as MyListAdapter
+                val scanResult = adapter.scanResultList[position]
+                Toast.makeText(view.context, "Item Clicked at $position : ${scanResult.scanRecord.deviceName}", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
     class MyViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
 
         lateinit var deviceName: TextView
@@ -225,14 +239,17 @@ class BLEScannerFragment : Fragment() {
             deviceAddress = itemView.findViewById(R.id.device_address)
             rssi = itemView.findViewById(R.id.rssi)
             connectable = itemView.findViewById(R.id.connectable)
+
         }
 
     }
 
-    class MyListAdapter(internal val scanResultList: ArrayList<ScanResult>) : RecyclerView.Adapter<MyViewHolder>() {
+    class MyListAdapter(val scanResultList: ArrayList<ScanResult>, val listener: View.OnClickListener) : RecyclerView.Adapter<MyViewHolder>() {
 
         override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): MyViewHolder {
-            return MyViewHolder(LayoutInflater.from(parent!!.context).inflate(R.layout.scanned_item, null))
+            val view = LayoutInflater.from(parent!!.context).inflate(R.layout.scanned_item, null)
+            view.setOnClickListener(listener)
+            return MyViewHolder(view)
         }
 
         override fun onBindViewHolder(holder: MyViewHolder?, position: Int) {
