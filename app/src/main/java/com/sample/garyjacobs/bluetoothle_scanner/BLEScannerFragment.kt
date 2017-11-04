@@ -1,6 +1,7 @@
 package com.sample.garyjacobs.bluetoothle_scanner
 
 import android.Manifest
+import android.app.Activity
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
 import android.bluetooth.le.ScanCallback
@@ -223,6 +224,14 @@ class BLEScannerFragment : Fragment() {
                 val adapter = theList.adapter as MyListAdapter
                 val scanResult = adapter.scanResultList[position]
                 Toast.makeText(view.context, "Item Clicked at $position : ${scanResult.scanRecord.deviceName}", Toast.LENGTH_LONG).show()
+                var bundle = Bundle()
+                bundle.putParcelable(SparkService.DEVICEADDRESS, scanResult.device)
+                var frag = SparkMainFragment()
+                frag.arguments = bundle
+                val fragmentManager = (view.context as Activity).fragmentManager
+                fragmentManager.beginTransaction()
+                        .replace(R.id.main_container, frag)
+                        .commit()
             }
         }
     }
