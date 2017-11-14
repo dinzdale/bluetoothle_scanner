@@ -61,9 +61,7 @@ class BLEScannerFragment : Fragment() {
         val linearLayoutManager = LinearLayoutManager(this.activity)
         linearLayoutManager.orientation = LinearLayoutCompat.VERTICAL
         scannedListView.layoutManager = linearLayoutManager
-        scannedListView.adapter = MyListAdapter(scanRecords, ListItemClickListener(scannedListView))
-
-
+        scannedListView.adapter = MyListAdapter(scanRecords, ListItemClickListener(this))
 
         setScanButtonLabel(scanning)
 
@@ -217,21 +215,24 @@ class BLEScannerFragment : Fragment() {
 
     }
 
-    class ListItemClickListener(val theList: RecyclerView) : View.OnClickListener {
+    class ListItemClickListener(val scannerFrag: BLEScannerFragment) : View.OnClickListener {
         override fun onClick(view: View?) {
             view?.let {
-                val position = theList.getChildAdapterPosition(view)
-                val adapter = theList.adapter as MyListAdapter
+                scannerFrag.scanBLEDevices()
+                val position = scannerFrag.scannedListView.getChildAdapterPosition(view)
+                val adapter = scannerFrag.scannedListView.adapter as MyListAdapter
                 val scanResult = adapter.scanResultList[position]
                 Toast.makeText(view.context, "Item Clicked at $position : ${scanResult.scanRecord.deviceName}", Toast.LENGTH_LONG).show()
-                var bundle = Bundle()
-                bundle.putParcelable(SparkService.DEVICEADDRESS, scanResult.device)
-                var frag = SparkMainFragment()
-                frag.arguments = bundle
-                val fragmentManager = (view.context as Activity).fragmentManager
-                fragmentManager.beginTransaction()
-                        .replace(R.id.main_container, frag)
-                        .commit()
+                if (scanResult?.device?.address.equals(SparkService.DEVICEADDRESS)) {
+                    var bundle = Bundle()
+                    bundle.putParcelable(SparkService.DEVICEADDRESS, scanResult.device)
+                    var frag = SparkMainFragment()
+                    frag.arguments = bundle
+                    val fragmentManager = (view.context as Activity).fragmentManager
+                    fragmentManager.beginTransaction()
+                            .replace(R.id.main_container, frag)
+                            .commit()
+                }
             }
         }
     }

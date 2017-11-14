@@ -2,10 +2,13 @@ package com.sample.garyjacobs.bluetoothle_scanner
 
 import android.app.Fragment
 import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothGatt
+import android.bluetooth.BluetoothGattService
 import android.content.ComponentName
 import android.content.Context.BIND_AUTO_CREATE
 import android.content.Intent
 import android.content.ServiceConnection
+import android.content.res.TypedArray
 import android.os.*
 import android.view.LayoutInflater
 import android.view.View
@@ -27,26 +30,45 @@ class SparkMainFragment() : Fragment() {
         val view = inflater?.inflate(R.layout.spark_main_fragment, null)!!
         statusTF = view.findViewById(R.id.spark_status)
         device = arguments.getParcelable<BluetoothDevice>(SparkService.DEVICEADDRESS)
-        var intent = Intent(this.context, SparkService.javaClass)
-        intent.putExtra(SparkService.DEVICEADDRESS,device)
+        var intent = Intent(this.context, SparkService::class.java)
+        intent.putExtra(SparkService.DEVICEADDRESS, device)
         this.context.bindService(intent, serivceConnection, BIND_AUTO_CREATE)
         return view
     }
 
-    class InboundHandler(val frag: SparkMainFragment) : Handler() {
+    inner class InboundHandler : Handler() {
 
         override fun handleMessage(msg: Message?) {
             when (msg!!.what) {
-                SparkService.CONNECTED -> frag.statusTF.text = "CONNECTED"
+                SparkService.CONNECTING -> statusTF.text = "CONNECTING"
+                SparkService.CONNECTIONSTATECHANGED ->
+                    if (msg.arg1 == BluetoothGatt.GATT_SUCCESS) when (msg.arg2) {
+                        BluetoothGatt.STATE_CONNECTED -> handleConnected()
+                        BluetoothGatt.STATE_DISCONNECTED -> handleDisconnected()
+                    }
+                SparkService.SERVICESFOUND -> handleServices(msg.data.get("services") as Array<BluetoothGattService>)
+
             }
         }
+    }
+
+    fun handleConnected() = {
+        statusTF.text = "Device connected...Waiting For Services"
+    }
+
+    fun handleDisconnected() = {
+        statusTF.text = "Device disconnected..."
+    }
+
+    fun handleServices(services: Array<BluetoothGattService>) {
+        statusTF.text = "Services Found: $services.toString()"
     }
 
     val serivceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             bound = true
             outboundMessenger = Messenger(service)
-            inboundMessenger = Messenger(InboundHandler(this@SparkMainFragment))
+            inboundMessenger = Messenger(InboundHandler())
             sendMessage(SparkService.CONNECT)
         }
 
