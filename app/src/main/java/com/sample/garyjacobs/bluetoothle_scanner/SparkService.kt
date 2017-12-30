@@ -4,11 +4,9 @@ import android.app.Service
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCallback
-import android.bluetooth.BluetoothGattService
 import android.content.Context
 import android.content.Intent
 import android.os.*
-import android.support.v4.content.ParallelExecutorCompat
 
 /**
  * Created by garyjacobs on 11/3/17.

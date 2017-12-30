@@ -4,8 +4,6 @@ import android.Manifest
 import android.app.Activity
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
-import android.bluetooth.le.ScanCallback
-import android.bluetooth.le.ScanResult
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
@@ -25,8 +23,13 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
+import com.polidea.rxandroidble.RxBleClient
+import com.polidea.rxandroidble.RxBleScanResult
+import com.polidea.rxandroidble.scan.ScanResult
+import com.polidea.rxandroidble.scan.ScanSettings
 import kotlinx.android.synthetic.main.bluetooth_scanned_list.*
-import kotlin.collections.ArrayList
+import kotlinx.android.synthetic.main.scanned_item.view.*
+import rx.Subscription
 
 /**
  * Created by garyjacobs on 9/5/17.
@@ -38,30 +41,41 @@ class BLEScannerFragment : Fragment() {
 
     var handler: Handler = Handler()
 
-    lateinit var scanStartStopButton: Button
-    lateinit var scannedListView: RecyclerView
-    lateinit var intervalSeekBar: SeekBar
-    lateinit var intervalInfinityButton: ImageButton
-    lateinit var intervalSeekBarLabel: TextView
+    //    lateinit var scanStartStopButton: Button
+//    lateinit var scannedListView: RecyclerView
+//    lateinit var intervalSeekBar: SeekBar
+//    lateinit var intervalInfinityButton: ImageButton
+//    lateinit var intervalSeekBarLabel: TextView
     var scanning: Boolean = false
 
     lateinit var bluetoothAdapter: BluetoothAdapter
-    var scanRecords: ArrayList<ScanResult> = ArrayList<ScanResult>()
+    //var scanResultList: ArrayList<ScanResult> = ArrayList<ScanResult>()
+    var scanResultList = emptyArray<ScanResult>().toMutableList()
+    var scanSubscription: Subscription? = null
+
+    //RxBle
+    lateinit var rxBleClient: RxBleClient
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        val scannedListLayout = inflater!!.inflate(R.layout.bluetooth_scanned_list, null) as View
-        scanStartStopButton = scannedListLayout.findViewById<Button>(R.id.scan_startstop_button)
-        scannedListView = scannedListLayout.findViewById<RecyclerView>(R.id.scan_results_listview)
-        intervalSeekBar = scannedListLayout.findViewById<SeekBar>(R.id.scan_interval_seekbar)
-        intervalInfinityButton = scannedListLayout.findViewById<ImageButton>(R.id.interval_infinity_button)
-        intervalInfinityButton.setOnClickListener(intervalInfinityListener)
-        intervalSeekBar.setOnSeekBarChangeListener(seekBarListener)
-        intervalSeekBarLabel = scannedListLayout.findViewById<TextView>(R.id.current_progress_textfield)
+        return inflater!!.inflate(R.layout.bluetooth_scanned_list, null) as View
+    }
+
+    override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
+
+        rxBleClient = RxBleClient.create(this.context)
+//        scanStartStopButton = scannedListLayout.findViewById<Button>(R.id.scan_startstop_button)
+//        scannedListView = scannedListLayout.findViewById<RecyclerView>(R.id.scan_results_listview)
+//        intervalSeekBar = scannedListLayout.findViewById<SeekBar>(R.id.scan_interval_seekbar)
+//
+//        intervalInfinityButton = scannedListLayout.findViewById<ImageButton>(R.id.interval_infinity_button)
+        interval_infinity_button.setOnClickListener(intervalInfinityListener)
+        scan_interval_seekbar.setOnSeekBarChangeListener(seekBarListener)
+        //intervalSeekBarLabel = scannedListLayout.findViewById<TextView>(R.id.current_progress_textfield)
 
         val linearLayoutManager = LinearLayoutManager(this.activity)
         linearLayoutManager.orientation = LinearLayoutCompat.VERTICAL
-        scannedListView.layoutManager = linearLayoutManager
-        scannedListView.adapter = MyListAdapter(scanRecords, ListItemClickListener(this))
+        scan_results_listview.layoutManager = linearLayoutManager
+        scan_results_listview.adapter = MyListAdapter(scanResultList, ListItemClickListener(this))
 
         setScanButtonLabel(scanning)
 
@@ -84,31 +98,27 @@ class BLEScannerFragment : Fragment() {
             }
 
             Toast.makeText(this.context, "BLE Supported!!", Toast.LENGTH_LONG)
-            val bluetoothManager: BluetoothManager = this.activity.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+            val bluetoothManager = this.activity.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
             bluetoothAdapter = bluetoothManager.adapter
 
         }
 
-        scanStartStopButton?.setOnClickListener(object : View.OnClickListener {
+        scan_startstop_button.setOnClickListener(object : View.OnClickListener {
             override fun onClick(view: View?) {
-                scanRecords.clear()
-                scannedListView.adapter.notifyDataSetChanged()
+                scanResultList.clear()
+                scan_results_listview.adapter.notifyDataSetChanged()
                 scanning = scanning.not()
                 setScanButtonLabel(scanning)
                 scanBLEDevices(scanning)
             }
         })
 
-
-        return scannedListLayout
     }
 
     override fun onStart() {
         super.onStart()
-        bluetoothAdapter?.let {
-            it.enable().not().apply {
-                startActivityForResult(Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE), REQUEST_ENABLE_BT)
-            }
+        bluetoothAdapter.enable().not().apply {
+            startActivityForResult(Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE), REQUEST_ENABLE_BT)
         }
     }
 
@@ -136,78 +146,117 @@ class BLEScannerFragment : Fragment() {
     val intervalInfinityListener = object : View.OnClickListener {
         override fun onClick(view: View?) {
             scanBLEDevices(false)
-            intervalSeekBar.progress = 0
+            scan_interval_seekbar.progress = 0
             scanBLEDevices(true, false)
         }
     }
+
 
     val stopScanningTask = object : Runnable {
         override fun run() {
             scanning = false
             setScanButtonLabel(scanning)
-            bluetoothAdapter.bluetoothLeScanner?.stopScan(scanCallBack)
+            //bluetoothAdapter.bluetoothLeScanner?.stopScan(scanCallBack)
+
         }
     }
 
     fun setScanButtonLabel(onOff: Boolean) = if (onOff) {
-        scanStartStopButton.text = "Stop Scan"
+        scan_startstop_button.text = "Stop Scan"
     } else {
-        scanStartStopButton.text = "Start Scan"
+        scan_startstop_button.text = "Start Scan"
     }
 
     fun scanBLEDevices(enable: Boolean = false, timed: Boolean = true) {
 
-        handler.removeCallbacks(stopScanningTask)
-
         if (enable) {
-            // start scan
+            scanSubscription = rxBleClient.scanBleDevices(ScanSettings.Builder().build(), com.polidea.rxandroidble.scan.ScanFilter.empty())
+                    .subscribe({ nxtResult ->
+                        val index = scanResultList.indexOfFirst {
+                             it.bleDevice.macAddress == nxtResult.bleDevice.macAddress
+                        }
+                        if (index == -1) {
+                            scanResultList.add(nxtResult)
+                            scan_results_listview.adapter.notifyDataSetChanged()
+                        } else {
+                            scanResultList[index] = nxtResult
+                            scan_results_listview.adapter.notifyItemChanged(index)
+                        }
+                    }, { error ->
+                        AlertDialog.Builder(this.context)
+                                .setMessage(error.message)
+                                .setIcon(android.R.drawable.ic_dialog_alert)
+                                .setPositiveButton(android.R.string.ok, null)
+                                .show()
+                    })
             if (timed) {
-                handler.postDelayed(stopScanningTask, minutesMillis(intervalSeekBar.progress + 1))
+                handler.postDelayed(stopScanningTask, minutesMillis(scan_interval_seekbar.progress + 1))
             }
             scanning = true
-            bluetoothAdapter.bluetoothLeScanner?.startScan(scanCallBack)
+            //bluetoothAdapter.bluetoothLeScanner?.startScan(scanCallBack)
         } else {
             // stop scan
             scanning = false
-            bluetoothAdapter.bluetoothLeScanner?.stopScan(scanCallBack)
+            scanSubscription?.let {
+                if (!it.isUnsubscribed) {
+                    it.unsubscribe()
+                }
+            }
+            //bluetoothAdapter.bluetoothLeScanner?.stopScan(scanCallBack)
         }
         setScanButtonLabel(scanning)
+
+
+//        handler.removeCallbacks(stopScanningTask)
+//
+//        if (enable) {
+//            // start scan
+//            if (timed) {
+//                handler.postDelayed(stopScanningTask, minutesMillis(intervalSeekBar.progress + 1))
+//            }
+//            scanning = true
+//            bluetoothAdapter.bluetoothLeScanner?.startScan(scanCallBack)
+//        } else {
+//            // stop scan
+//            scanning = false
+//            bluetoothAdapter.bluetoothLeScanner?.stopScan(scanCallBack)
+//        }
     }
 
     fun minutesMillis(noMinutes: Int): Long {
         return noMinutes * 60 * 1000L
     }
 
-    val scanCallBack = object : ScanCallback() {
-
-        override fun onScanFailed(errorCode: Int) {
-            super.onScanFailed(errorCode)
-            Log.e(TAG, "Failed scan $errorCode")
-        }
-
-        override fun onScanResult(callbackType: Int, result: ScanResult?) {
-            super.onScanResult(callbackType, result)
-            result?.let {
-                val index = scanRecords.indexOfFirst({
-                    it.scanRecord.deviceName == result.scanRecord.deviceName && it.device.address == result.device.address
-                })
-                if (index == -1) {
-                    scanRecords.add(result)
-                    scannedListView.adapter.notifyDataSetChanged()
-                } else {
-                    Log.i(TAG, "Updating ${result.scanRecord.toString()}")
-                    scanRecords[index] = result
-                    scannedListView.adapter.notifyItemChanged(index)
-                }
-            }
-            Log.i(TAG, " ScanCallback: callbackType: $callbackType result: ${result.toString()}")
-        }
-
-        override fun onBatchScanResults(results: MutableList<ScanResult>?) {
-            super.onBatchScanResults(results)
-        }
-
-    }
+//    val scanCallBack = object : ScanCallback() {
+//
+//        override fun onScanFailed(errorCode: Int) {
+//            super.onScanFailed(errorCode)
+//            Log.e(TAG, "Failed scan $errorCode")
+//        }
+//
+//        override fun onScanResult(callbackType: Int, result: ScanResult?) {
+//            super.onScanResult(callbackType, result)
+//            result?.let {
+//                val index = scanResultList.indexOfFirst({
+//                    it.scanRecord.deviceName == result.scanRecord.deviceName && it.device.address == result.device.address
+//                })
+//                if (index == -1) {
+//                    scanResultList.add(result)
+//                    scannedListView.adapter.notifyDataSetChanged()
+//                } else {
+//                    Log.i(TAG, "Updating ${result.scanRecord.toString()}")
+//                    scanResultList[index] = result
+//                    scannedListView.adapter.notifyItemChanged(index)
+//                }
+//            }
+//            Log.i(TAG, " ScanCallback: callbackType: $callbackType result: ${result.toString()}")
+//        }
+//
+//        override fun onBatchScanResults(results: MutableList<ScanResult>?) {
+//            super.onBatchScanResults(results)
+//        }
+//
+//    }
 
     fun locationsGranted(): Boolean {
         return ContextCompat.checkSelfPermission(this.activity, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
@@ -219,13 +268,13 @@ class BLEScannerFragment : Fragment() {
         override fun onClick(view: View?) {
             view?.let {
                 scannerFrag.scanBLEDevices()
-                val position = scannerFrag.scannedListView.getChildAdapterPosition(view)
-                val adapter = scannerFrag.scannedListView.adapter as MyListAdapter
+                val position = scannerFrag.scan_results_listview.getChildAdapterPosition(view)
+                val adapter = scannerFrag.scan_results_listview.adapter as MyListAdapter
                 val scanResult = adapter.scanResultList[position]
                 Toast.makeText(view.context, "Item Clicked at $position : ${scanResult.scanRecord.deviceName}", Toast.LENGTH_LONG).show()
-                if (scanResult?.device?.address.equals(SparkService.DEVICEADDRESS)) {
+                if (scanResult.bleDevice.macAddress.equals(SparkService.DEVICEADDRESS)) {
                     var bundle = Bundle()
-                    bundle.putParcelable(SparkService.DEVICEADDRESS, scanResult.device)
+                    bundle.putParcelable(SparkService.DEVICEADDRESS, scanResult.bleDevice.bluetoothDevice)
                     var frag = SparkMainFragment()
                     frag.arguments = bundle
                     val fragmentManager = (view.context as Activity).fragmentManager
@@ -239,22 +288,13 @@ class BLEScannerFragment : Fragment() {
 
     class MyViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
 
-        lateinit var deviceName: TextView
-        lateinit var deviceAddress: TextView
-        lateinit var rssi: TextView
-        lateinit var connectable: TextView
-
-        init {
-            deviceName = itemView.findViewById(R.id.device_name)
-            deviceAddress = itemView.findViewById(R.id.device_address)
-            rssi = itemView.findViewById(R.id.rssi)
-            connectable = itemView.findViewById(R.id.connectable)
-
-        }
-
+        var deviceName = itemView.device_name
+        var deviceAddress = itemView.device_address
+        var rssi = itemView.rssi
+        var connectable = itemView.connectable
     }
 
-    class MyListAdapter(val scanResultList: ArrayList<ScanResult>, val listener: View.OnClickListener) : RecyclerView.Adapter<MyViewHolder>() {
+    class MyListAdapter(val scanResultList: List<ScanResult>, val listener: View.OnClickListener) : RecyclerView.Adapter<MyViewHolder>() {
 
         override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): MyViewHolder {
             val view = LayoutInflater.from(parent!!.context).inflate(R.layout.scanned_item, null)
@@ -267,7 +307,7 @@ class BLEScannerFragment : Fragment() {
                 val resources = viewHolder.deviceName.resources
                 val scanResult = scanResultList[position]
                 viewHolder.deviceName.text = resources.getString(R.string.device_name, scanResult.scanRecord.deviceName)
-                viewHolder.deviceAddress.text = resources.getString(R.string.device_address, scanResult.device.address)
+                viewHolder.deviceAddress.text = resources.getString(R.string.device_address, scanResult.bleDevice.macAddress)
                 viewHolder.rssi.text = resources.getString(R.string.power_level, scanResult.rssi)
                 viewHolder.connectable.text = resources.getString(R.string.connectable, scanResult.scanRecord.advertiseFlags)
             }

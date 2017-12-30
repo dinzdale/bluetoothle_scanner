@@ -39,15 +39,18 @@ class SparkMainFragment() : Fragment() {
     inner class InboundHandler : Handler() {
 
         override fun handleMessage(msg: Message?) {
-            when (msg!!.what) {
-                SparkService.CONNECTING -> statusTF.text = "CONNECTING"
-                SparkService.CONNECTIONSTATECHANGED ->
-                    if (msg.arg1 == BluetoothGatt.GATT_SUCCESS) when (msg.arg2) {
-                        BluetoothGatt.STATE_CONNECTED -> handleConnected()
-                        BluetoothGatt.STATE_DISCONNECTED -> handleDisconnected()
-                    }
-                SparkService.SERVICESFOUND -> handleServices(msg.data.get("services") as Array<BluetoothGattService>)
+            msg?.let {
+                when (msg.what) {
+                    SparkService.CONNECTING -> statusTF.text = "CONNECTING"
+                    SparkService.CONNECTIONSTATECHANGED ->
+                        if (msg.arg1 == BluetoothGatt.GATT_SUCCESS)
+                            when (msg.arg2) {
+                                BluetoothGatt.STATE_CONNECTED -> handleConnected()
+                                BluetoothGatt.STATE_DISCONNECTED -> handleDisconnected()
+                            }
+                    SparkService.SERVICESFOUND -> handleServices(msg.data.get("services") as Array<BluetoothGattService>)
 
+                }
             }
         }
     }
