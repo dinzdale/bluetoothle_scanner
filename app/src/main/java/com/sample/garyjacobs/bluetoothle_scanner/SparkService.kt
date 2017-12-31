@@ -17,6 +17,7 @@ class SparkService : Service() {
 
     val CONNNECT = 1
     lateinit var device: BluetoothDevice
+    lateinit var gatt : BluetoothGatt
     lateinit var inboundMessenger: Messenger
     lateinit var outboundMessenger: Messenger
 
@@ -25,7 +26,9 @@ class SparkService : Service() {
         val CONNECT = 1
         val CONNECTING = 2
         val CONNECTIONSTATECHANGED = 3
-        val SERVICESFOUND = 5
+        val SERVICESDISCOVERED = 5
+        val DISCONNECTFROMSERVICE = 11
+        val SERVICEDISCONNECTED = -11
     }
 
     override fun onBind(intent: Intent?): IBinder {
@@ -37,14 +40,14 @@ class SparkService : Service() {
     inner class InBoundHandler(val context: Context, val device: BluetoothDevice) : Handler() {
 
         override fun handleMessage(incomingMessage: Message?) {
-            val message = Message.obtain()
             outboundMessenger = incomingMessage!!.replyTo
+
             when (incomingMessage.what) {
                 CONNECT -> {
-                    message.what = CONNECTING
-                    outboundMessenger.send(message)
-                    device.connectGatt(context, true, gattCallBack)
+                    sendMessage(CONNNECT)
+                    gatt = device.connectGatt(context, true, gattCallBack)
                 }
+                DISCONNECTFROMSERVICE -> gatt.disconnect()
             }
         }
 
@@ -52,29 +55,40 @@ class SparkService : Service() {
 
     val gattCallBack = object : BluetoothGattCallback() {
         override fun onConnectionStateChange(gatt: BluetoothGatt?, status: Int, newState: Int) {
-            val message = Message.obtain()
-            message.what = status
-            message.arg1 = newState
-            outboundMessenger.send(message)
-            if (newState == BluetoothGatt.STATE_CONNECTED) {
-                gatt?.discoverServices()
+            sendMessage(CONNECTIONSTATECHANGED, status, newState)
+            when (newState) {
+                BluetoothGatt.STATE_CONNECTED -> gatt?.discoverServices()
+                BluetoothGatt.STATE_DISCONNECTED -> sendMessage(SERVICEDISCONNECTED)
             }
+
         }
 
         override fun onServicesDiscovered(gatt: BluetoothGatt?, status: Int) {
 
             gatt?.services?.let {
-                val message = Message.obtain()
-                message.what = SERVICESFOUND
                 val bundle = Bundle()
                 bundle.putParcelableArray("services", it.toTypedArray())
-                message.data = bundle
-                outboundMessenger.send(message)
+                sendMessage(SERVICESDISCOVERED, bundle = bundle)
             }
         }
     }
 
     override fun onUnbind(intent: Intent?): Boolean {
         return super.onUnbind(intent)
+    }
+
+    fun sendMessage(what: Int, arg1: Int? = null, arg2: Int? = null, bundle: Bundle? = null) {
+        val message = Message.obtain()
+        message.what = what
+        bundle?.let {
+            message.data = bundle
+        }
+        arg1?.let {
+            message.arg1 = arg1
+        }
+        arg2?.let {
+            message.arg2 = arg2
+        }
+        outboundMessenger.send(message)
     }
 }

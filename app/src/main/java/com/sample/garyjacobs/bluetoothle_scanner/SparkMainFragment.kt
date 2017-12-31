@@ -10,16 +10,18 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.content.res.TypedArray
 import android.os.*
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import com.sample.garyjacobs.bluetoothle_scanner.utils.BleNamesResolver
 
 /**
  * Created by garyjacobs on 11/3/17.
  */
 class SparkMainFragment() : Fragment() {
-
+    val TAG = SparkMainFragment::class.java.simpleName
     lateinit var statusTF: TextView
     lateinit var device: BluetoothDevice
     lateinit var inboundMessenger: Messenger
@@ -30,10 +32,22 @@ class SparkMainFragment() : Fragment() {
         val view = inflater?.inflate(R.layout.spark_main_fragment, null)!!
         statusTF = view.findViewById(R.id.spark_status)
         device = arguments.getParcelable<BluetoothDevice>(SparkService.DEVICEADDRESS)
+
+        return view
+    }
+
+    override fun onResume() {
+        super.onResume()
         var intent = Intent(this.context, SparkService::class.java)
         intent.putExtra(SparkService.DEVICEADDRESS, device)
-        this.context.bindService(intent, serivceConnection, BIND_AUTO_CREATE)
-        return view
+        this.context.bindService(intent, serviceConnection, BIND_AUTO_CREATE)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        var intent = Intent(this.context, SparkService::class.java)
+        intent.putExtra(SparkService.DEVICEADDRESS, device)
+        this.context.unbindService(serviceConnection)
     }
 
     inner class InboundHandler : Handler() {
@@ -46,7 +60,8 @@ class SparkMainFragment() : Fragment() {
                         BluetoothGatt.STATE_CONNECTED -> handleConnected()
                         BluetoothGatt.STATE_DISCONNECTED -> handleDisconnected()
                     }
-                SparkService.SERVICESFOUND -> handleServices(msg.data.get("services") as Array<BluetoothGattService>)
+                SparkService.SERVICESDISCOVERED -> handleServices(msg.data.get("services") as Array<BluetoothGattService>)
+                SparkService.SERVICEDISCONNECTED -> handleDisconnected()
 
             }
         }
@@ -61,10 +76,25 @@ class SparkMainFragment() : Fragment() {
     }
 
     fun handleServices(services: Array<BluetoothGattService>) {
-        statusTF.text = "Services Found: $services.toString()"
+
+        statusTF.text = "${services.size} Services Found"
+        Log.d(TAG, "${services.size} services found")
+        services.forEachIndexed { index, bluetoothGattService ->
+            Log.d(TAG, "SERVICE $index ${bluetoothGattService.uuid}:${BleNamesResolver.resolveUuid(bluetoothGattService.uuid.toString())}")
+            bluetoothGattService.includedServices.forEachIndexed { index, bluetoothGattService ->
+                Log.d(TAG, "included service $index UUID: ${bluetoothGattService.uuid}:${BleNamesResolver.resolveUuid(bluetoothGattService.uuid.toString())}")
+            }
+            bluetoothGattService.characteristics.forEachIndexed { index, bluetoothGattCharacteristic ->
+                Log.d(TAG, "characterisitic $index UUID: ${bluetoothGattCharacteristic.uuid}:${BleNamesResolver.resolveUuid(bluetoothGattCharacteristic.uuid.toString())}")
+                bluetoothGattCharacteristic.descriptors.forEachIndexed { index, bluetoothGattDescriptor ->
+                    Log.d(TAG, "descriptor $index desc: ${bluetoothGattDescriptor.characteristic.uuid}:${BleNamesResolver.resolveUuid(bluetoothGattCharacteristic.uuid.toString())}")
+                }
+            }
+        }
+        sendMessage(SparkService.DISCONNECTFROMSERVICE)
     }
 
-    val serivceConnection = object : ServiceConnection {
+    val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             bound = true
             outboundMessenger = Messenger(service)

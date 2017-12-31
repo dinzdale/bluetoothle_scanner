@@ -215,10 +215,9 @@ class BLEScannerFragment : Fragment() {
 
     }
 
-    class ListItemClickListener(val scannerFrag: BLEScannerFragment) : View.OnClickListener {
+     class ListItemClickListener(val scannerFrag: BLEScannerFragment) : View.OnClickListener {
         override fun onClick(view: View?) {
             view?.let {
-                scannerFrag.scanBLEDevices()
                 val position = scannerFrag.scannedListView.getChildAdapterPosition(view)
                 val adapter = scannerFrag.scannedListView.adapter as MyListAdapter
                 val scanResult = adapter.scanResultList[position]
@@ -231,6 +230,7 @@ class BLEScannerFragment : Fragment() {
                     val fragmentManager = (view.context as Activity).fragmentManager
                     fragmentManager.beginTransaction()
                             .replace(R.id.main_container, frag)
+                            .addToBackStack(null)
                             .commit()
                 }
             }
