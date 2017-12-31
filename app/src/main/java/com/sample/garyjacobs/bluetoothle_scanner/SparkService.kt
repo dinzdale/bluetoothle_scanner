@@ -7,6 +7,9 @@ import android.bluetooth.BluetoothGattCallback
 import android.content.Context
 import android.content.Intent
 import android.os.*
+import com.polidea.rxandroidble.RxBleClient
+import com.polidea.rxandroidble.RxBleConnection
+import com.polidea.rxandroidble.RxBleDevice
 
 /**
  * Created by garyjacobs on 11/3/17.
@@ -15,6 +18,7 @@ class SparkService : Service() {
 
     val CONNNECT = 1
     lateinit var device: BluetoothDevice
+    lateinit var rxBleDevice: RxBleDevice
     lateinit var inboundMessenger: Messenger
     lateinit var outboundMessenger: Messenger
 
@@ -28,9 +32,11 @@ class SparkService : Service() {
 
     override fun onBind(intent: Intent?): IBinder {
         device = intent?.extras?.get(DEVICEADDRESS) as BluetoothDevice
+        rxBleDevice = RxBleClient.create(this).getBleDevice(DEVICEADDRESS)
         inboundMessenger = Messenger(InBoundHandler(this, device))
         return inboundMessenger.binder
     }
+
 
     inner class InBoundHandler(val context: Context, val device: BluetoothDevice) : Handler() {
 
@@ -39,9 +45,15 @@ class SparkService : Service() {
             outboundMessenger = incomingMessage!!.replyTo
             when (incomingMessage.what) {
                 CONNECT -> {
-                    message.what = CONNECTING
-                    outboundMessenger.send(message)
-                    device.connectGatt(context, true, gattCallBack)
+                    sendMessage(CONNECTING)
+                    //device.connectGatt(context, true, gattCallBack)
+                    rxBleDevice.establishConnection(false)
+                            .flatMap { rxBleConnection -> rxBleConnection.discoverServices() }
+                            .subscribe { rxBleDeviceServices ->
+                                val bundle = Bundle()
+                                bundle.putParcelableArray("SERVICES",rxBleDeviceServices.bluetoothGattServices.toTypedArray())
+                                sendMessage(SERVICESFOUND,bundle)
+                            }
                 }
             }
         }
@@ -74,5 +86,22 @@ class SparkService : Service() {
 
     override fun onUnbind(intent: Intent?): Boolean {
         return super.onUnbind(intent)
+    }
+
+
+    fun sendMessage(what: Int, bundle: Bundle? = null,
+                              status: Boolean = true, outMessenger: Messenger = outboundMessenger, inMessenger: Messenger = inboundMessenger) {
+        val outboundmessage = Message.obtain()
+        outboundmessage.what = what
+        outboundmessage.replyTo = inMessenger
+        bundle?.let {
+            bundle.putBoolean("STATUS", status)
+            outboundmessage.data = bundle
+        }
+        try {
+            outMessenger.send(outboundmessage)
+        } catch (e: RemoteException) {
+            e.printStackTrace()
+        }
     }
 }

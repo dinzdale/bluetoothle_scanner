@@ -42,14 +42,7 @@ class SparkMainFragment() : Fragment() {
             msg?.let {
                 when (msg.what) {
                     SparkService.CONNECTING -> statusTF.text = "CONNECTING"
-                    SparkService.CONNECTIONSTATECHANGED ->
-                        if (msg.arg1 == BluetoothGatt.GATT_SUCCESS)
-                            when (msg.arg2) {
-                                BluetoothGatt.STATE_CONNECTED -> handleConnected()
-                                BluetoothGatt.STATE_DISCONNECTED -> handleDisconnected()
-                            }
-                    SparkService.SERVICESFOUND -> handleServices(msg.data.get("services") as Array<BluetoothGattService>)
-
+                    SparkService.SERVICESFOUND -> handleServices(msg.data.get("SERVICES") as Array<BluetoothGattService>)
                 }
             }
         }
@@ -64,7 +57,7 @@ class SparkMainFragment() : Fragment() {
     }
 
     fun handleServices(services: Array<BluetoothGattService>) {
-        statusTF.text = "Services Found: $services.toString()"
+        statusTF.text = "Services Found: no:${services.size} characteristics :${services[0].characteristics.size}"
     }
 
     val serivceConnection = object : ServiceConnection {

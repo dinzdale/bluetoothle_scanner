@@ -15,16 +15,16 @@ import android.support.annotation.RequiresApi
 import android.support.v4.app.Fragment
 import android.support.v4.content.ContextCompat
 import android.support.v7.app.AlertDialog
-import android.support.v7.widget.LinearLayoutCompat
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.*
+import android.widget.LinearLayout
+import android.widget.SeekBar
+import android.widget.Toast
 import com.polidea.rxandroidble.RxBleClient
-import com.polidea.rxandroidble.RxBleScanResult
 import com.polidea.rxandroidble.scan.ScanResult
 import com.polidea.rxandroidble.scan.ScanSettings
 import kotlinx.android.synthetic.main.bluetooth_scanned_list.*
@@ -41,11 +41,6 @@ class BLEScannerFragment : Fragment() {
 
     var handler: Handler = Handler()
 
-    //    lateinit var scanStartStopButton: Button
-//    lateinit var scannedListView: RecyclerView
-//    lateinit var intervalSeekBar: SeekBar
-//    lateinit var intervalInfinityButton: ImageButton
-//    lateinit var intervalSeekBarLabel: TextView
     var scanning: Boolean = false
 
     lateinit var bluetoothAdapter: BluetoothAdapter
@@ -57,23 +52,17 @@ class BLEScannerFragment : Fragment() {
     lateinit var rxBleClient: RxBleClient
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        return inflater!!.inflate(R.layout.bluetooth_scanned_list, null) as View
+        return inflater!!.inflate(R.layout.bluetooth_scanned_list, null)
     }
 
     override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
 
         rxBleClient = RxBleClient.create(this.context)
-//        scanStartStopButton = scannedListLayout.findViewById<Button>(R.id.scan_startstop_button)
-//        scannedListView = scannedListLayout.findViewById<RecyclerView>(R.id.scan_results_listview)
-//        intervalSeekBar = scannedListLayout.findViewById<SeekBar>(R.id.scan_interval_seekbar)
-//
-//        intervalInfinityButton = scannedListLayout.findViewById<ImageButton>(R.id.interval_infinity_button)
         interval_infinity_button.setOnClickListener(intervalInfinityListener)
         scan_interval_seekbar.setOnSeekBarChangeListener(seekBarListener)
-        //intervalSeekBarLabel = scannedListLayout.findViewById<TextView>(R.id.current_progress_textfield)
 
         val linearLayoutManager = LinearLayoutManager(this.activity)
-        linearLayoutManager.orientation = LinearLayoutCompat.VERTICAL
+        linearLayoutManager.orientation = LinearLayout.VERTICAL
         scan_results_listview.layoutManager = linearLayoutManager
         scan_results_listview.adapter = MyListAdapter(scanResultList, ListItemClickListener(this))
 
@@ -81,7 +70,7 @@ class BLEScannerFragment : Fragment() {
 
         if (!this.activity.packageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
             Toast.makeText(this.activity, "This device does not support BLE", Toast.LENGTH_LONG).show()
-            this.activity.finish()
+            activity.finish()
         } else {
             @RequiresApi(Build.VERSION_CODES.M)
             if (locationsGranted().not()) {
@@ -156,7 +145,6 @@ class BLEScannerFragment : Fragment() {
         override fun run() {
             scanning = false
             setScanButtonLabel(scanning)
-            //bluetoothAdapter.bluetoothLeScanner?.stopScan(scanCallBack)
 
         }
     }
@@ -193,7 +181,6 @@ class BLEScannerFragment : Fragment() {
                 handler.postDelayed(stopScanningTask, minutesMillis(scan_interval_seekbar.progress + 1))
             }
             scanning = true
-            //bluetoothAdapter.bluetoothLeScanner?.startScan(scanCallBack)
         } else {
             // stop scan
             scanning = false
@@ -202,61 +189,15 @@ class BLEScannerFragment : Fragment() {
                     it.unsubscribe()
                 }
             }
-            //bluetoothAdapter.bluetoothLeScanner?.stopScan(scanCallBack)
         }
         setScanButtonLabel(scanning)
 
-
-//        handler.removeCallbacks(stopScanningTask)
-//
-//        if (enable) {
-//            // start scan
-//            if (timed) {
-//                handler.postDelayed(stopScanningTask, minutesMillis(intervalSeekBar.progress + 1))
-//            }
-//            scanning = true
-//            bluetoothAdapter.bluetoothLeScanner?.startScan(scanCallBack)
-//        } else {
-//            // stop scan
-//            scanning = false
-//            bluetoothAdapter.bluetoothLeScanner?.stopScan(scanCallBack)
-//        }
     }
 
     fun minutesMillis(noMinutes: Int): Long {
         return noMinutes * 60 * 1000L
     }
 
-//    val scanCallBack = object : ScanCallback() {
-//
-//        override fun onScanFailed(errorCode: Int) {
-//            super.onScanFailed(errorCode)
-//            Log.e(TAG, "Failed scan $errorCode")
-//        }
-//
-//        override fun onScanResult(callbackType: Int, result: ScanResult?) {
-//            super.onScanResult(callbackType, result)
-//            result?.let {
-//                val index = scanResultList.indexOfFirst({
-//                    it.scanRecord.deviceName == result.scanRecord.deviceName && it.device.address == result.device.address
-//                })
-//                if (index == -1) {
-//                    scanResultList.add(result)
-//                    scannedListView.adapter.notifyDataSetChanged()
-//                } else {
-//                    Log.i(TAG, "Updating ${result.scanRecord.toString()}")
-//                    scanResultList[index] = result
-//                    scannedListView.adapter.notifyItemChanged(index)
-//                }
-//            }
-//            Log.i(TAG, " ScanCallback: callbackType: $callbackType result: ${result.toString()}")
-//        }
-//
-//        override fun onBatchScanResults(results: MutableList<ScanResult>?) {
-//            super.onBatchScanResults(results)
-//        }
-//
-//    }
 
     fun locationsGranted(): Boolean {
         return ContextCompat.checkSelfPermission(this.activity, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
