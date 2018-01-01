@@ -29,6 +29,8 @@ class SparkService : Service() {
         val SERVICESDISCOVERED = 5
         val DISCONNECTFROMSERVICE = 11
         val SERVICEDISCONNECTED = -11
+        val PING = 20
+        val PINGRESULT = -20
     }
 
     override fun onBind(intent: Intent?): IBinder {
@@ -48,6 +50,8 @@ class SparkService : Service() {
                     gatt = device.connectGatt(context, true, gattCallBack)
                 }
                 DISCONNECTFROMSERVICE -> gatt.disconnect()
+                PING->gatt.readCharacteristic()
+                PING->gatt.writeCharacteristic()
             }
         }
 
