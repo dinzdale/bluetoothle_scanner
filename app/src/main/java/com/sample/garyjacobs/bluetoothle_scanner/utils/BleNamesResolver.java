@@ -80,8 +80,9 @@ public class BleNamesResolver {
         mServices.put("00001814-0000-1000-8000-00805f9b34fb", "Running Speed and Cadence");
         mServices.put("00001813-0000-1000-8000-00805f9b34fb", "Scan Parameters");
         mServices.put("00001804-0000-1000-8000-00805f9b34fb", "Tx Power");
-        mServices.put("22bb746f-2bb0-7554-2D6F-726568705327", "Radio");
-        mServices.put("22bb746f-2ba0-7554-2d6f-726568705327", "Robot");
+        mServices.put("22BB746F-2BB0-7554-2D6F-726568705327".toLowerCase(), "Radio");
+        mServices.put("22bb746f-2ba0-7554-2d6f-726568705327".toLowerCase(), "Robot");
+        mServices.put("00001016-d102-11e1-9b23-00025b00a5a5".toLowerCase(), "DEVICE_INFO (?)");
 
         mCharacteristics.put("00002a43-0000-1000-8000-00805f9b34fb", "Alert Category ID");
         mCharacteristics.put("00002a42-0000-1000-8000-00805f9b34fb", "Alert Category ID Bit Mask");
@@ -165,19 +166,22 @@ public class BleNamesResolver {
         mCharacteristics.put("00002a07-0000-1000-8000-00805f9b34fb", "Tx Power Level");
         mCharacteristics.put("00002a45-0000-1000-8000-00805f9b34fb", "Unread Alert Status");
 //
-        mCharacteristics.put("22bb746f-2bb2-7554-2D6F-726568705327", "TX power");
-        mCharacteristics.put("22BB746F-2BB6-7554-2D6F-726568705327", "RSSI");
-        mCharacteristics.put("22BB746F-2bb7-7554-2D6F-726568705327", "Deep sleep");
-        mCharacteristics.put("22bb746f-2bbd-7554-2D6F-726568705327", "Anti DOS");
-        mCharacteristics.put("22bb746f-2bbe-7554-2D6F-726568705327", "Anti DOS timeout");
-        mCharacteristics.put("22bb746f-2bbf-7554-2D6F-726568705327", "Wakeup");
+        mCharacteristics.put("22bb746f-2bb2-7554-2D6F-726568705327".toLowerCase(), "TX power");
+        mCharacteristics.put("22BB746F-2BB6-7554-2D6F-726568705327".toLowerCase(), "RSSI");
+        mCharacteristics.put("22BB746F-2bb7-7554-2D6F-726568705327".toLowerCase(), "Deep sleep");
+        mCharacteristics.put("22bb746f-2bbd-7554-2D6F-726568705327".toLowerCase(), "Anti DOS");
+        mCharacteristics.put("22bb746f-2bbe-7554-2D6F-726568705327".toLowerCase(), "Anti DOS timeout");
+        mCharacteristics.put("22bb746f-2bbf-7554-2D6F-726568705327".toLowerCase(), "Wakeup");
 //
-        mCharacteristics.put("22bb746F-2ba1-7554-2D6F-726568705327", "Control");
-        mCharacteristics.put("22bb746F-2ba6-7554-2D6F-726568705327", "Response");
-        mCharacteristics.put("0000180a-0000-1000-8000-00805f9b34fb", "Device information");
-        mCharacteristics.put("00002A24-0000-1000-8000-00805f9b34fb", "Model number");
-        mCharacteristics.put("00002A25-0000-1000-8000-00805f9b34fb", "Serial number");
-        mCharacteristics.put("00002A26-0000-1000-8000-00805f9b34fb", "Radio firmware version");
+        mCharacteristics.put("22bb746f-2ba1-7554-2d6f-726568705327".toLowerCase(), "Control");
+        mCharacteristics.put("22bb746F-2ba6-7554-2D6F-726568705327".toLowerCase(), "Response");
+        mCharacteristics.put("0000180a-0000-1000-8000-00805f9b34fb".toLowerCase(), "Device information");
+        mCharacteristics.put("00002A24-0000-1000-8000-00805f9b34fb".toLowerCase(), "Model number");
+        mCharacteristics.put("00002A25-0000-1000-8000-00805f9b34fb".toLowerCase(), "Serial number");
+        mCharacteristics.put("00002A26-0000-1000-8000-00805f9b34fb".toLowerCase(), "Radio firmware version");
+        mCharacteristics.put("00001013-d102-11e1-9b23-00025b00a5a5".toLowerCase(), "MODEL_NUMBER (?)");
+        mCharacteristics.put("00001014-d102-11e1-9b23-00025b00a5a5".toLowerCase(), "SERIAL_NUMBER (?)");
+        mCharacteristics.put("000001017-d102-11e1-9b23-00025b00a5a5".toLowerCase(), "RADIO_FIRMWARE_VERSION (?)");
 
 
         mValueFormats.put(Integer.valueOf(52), "32bit float");

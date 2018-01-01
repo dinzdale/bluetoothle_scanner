@@ -60,7 +60,19 @@ class SparkMainFragment() : Fragment() {
                         BluetoothGatt.STATE_CONNECTED -> handleConnected()
                         BluetoothGatt.STATE_DISCONNECTED -> handleDisconnected()
                     }
-                SparkService.SERVICESDISCOVERED -> handleServices(msg.data.get("services") as Array<BluetoothGattService>)
+                SparkService.SERVICESDISCOVERED -> {
+                    handleServices(msg.data.get("services") as Array<BluetoothGattService>)
+                    sendMessage(SparkService.PING)
+                }
+                SparkService.PINGRESULT -> {
+                    val bundle = Bundle()
+                    bundle.putByte(SparkService.COLORRED, 0xCF.toByte())
+                    bundle.putByte(SparkService.COLORGREEN, 0x9A.toByte())
+                    bundle.putByte(SparkService.COLORBLUE, 0x30.toByte())
+                    sendMessage(SparkService.SETCOLORRGB, bundle)
+                }
+                SparkService.SETCOLORRGBRESPONSE -> {
+                }
                 SparkService.SERVICEDISCONNECTED -> handleDisconnected()
 
             }
@@ -85,9 +97,11 @@ class SparkMainFragment() : Fragment() {
                 Log.d(TAG, "included service $index UUID: ${bluetoothGattService.uuid}:${BleNamesResolver.resolveUuid(bluetoothGattService.uuid.toString())}")
             }
             bluetoothGattService.characteristics.forEachIndexed { index, bluetoothGattCharacteristic ->
-                Log.d(TAG, "characterisitic $index UUID: ${bluetoothGattCharacteristic.uuid}:${BleNamesResolver.resolveUuid(bluetoothGattCharacteristic.uuid.toString())}")
+                val uuid = bluetoothGattCharacteristic.uuid
+                Log.d(TAG, "characterisitic $index UUID: ${uuid}:${BleNamesResolver.resolveCharacteristicName(uuid.toString())}")
                 bluetoothGattCharacteristic.descriptors.forEachIndexed { index, bluetoothGattDescriptor ->
-                    Log.d(TAG, "descriptor $index desc: ${bluetoothGattDescriptor.characteristic.uuid}:${BleNamesResolver.resolveUuid(bluetoothGattCharacteristic.uuid.toString())}")
+                    val uuid = bluetoothGattCharacteristic.uuid
+                    Log.d(TAG, "descriptor $index desc: ${uuid}:${BleNamesResolver.resolveCharacteristicName(uuid.toString())}")
                 }
             }
         }
@@ -107,10 +121,11 @@ class SparkMainFragment() : Fragment() {
         }
     }
 
-    fun sendMessage(messageNumber: Int) {
+    fun sendMessage(messageNumber: Int, bundle: Bundle? = null) {
         var message = Message.obtain()
         message.replyTo = inboundMessenger
         message.what = messageNumber
+        bundle?.let { message.data = bundle }
         outboundMessenger.send(message)
     }
 }
