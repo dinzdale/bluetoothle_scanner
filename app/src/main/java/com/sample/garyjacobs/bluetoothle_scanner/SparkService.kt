@@ -4,6 +4,7 @@ import android.app.Service
 import android.bluetooth.*
 import android.content.Context
 import android.content.Intent
+import android.content.res.TypedArray
 import android.os.*
 import android.util.Log
 import com.sample.garyjacobs.bluetoothle_scanner.utils.sphero.Command
@@ -27,16 +28,20 @@ class SparkService : Service() {
         val CONNECT = 1
         val CONNECTING = 2
         val CONNECTIONSTATECHANGED = 3
+        val CONNECTED = 4
         val SERVICESDISCOVERED = 5
         val DISCONNECTFROMSERVICE = 11
         val SERVICEDISCONNECTED = -11
         val PING = 20
         val PINGRESULT = -20
         val SETCOLORRGB = 30
+        val SETBACKLED = 40
+        // bundle keys
         val COLORRED = "RED"
         val COLORGREEN = "GREEN"
         val COLORBLUE = "BLUE"
-        val SETCOLORRGBRESPONSE = -30
+        val BACKLED = "BACKLED"
+        val FOUNDSERVICES = "FOUNDSERVICES"
 
         // wake up codes
         val ANTIDOS = "011i3".toByteArray()
@@ -72,11 +77,12 @@ class SparkService : Service() {
 
             when (incomingMessage.what) {
                 CONNECT -> {
-                    sendMessage(CONNNECT)
+                    sendMessage(CONNECTING)
                     gatt = device.connectGatt(context, true, gattCallBack)
                 }
                 DISCONNECTFROMSERVICE -> gatt.disconnect()
-                PING -> { }
+                PING -> {
+                }
                 SETCOLORRGB -> {
                     val red = incomingMessage.data.getByte(COLORRED)
                     val green = incomingMessage.data.getByte(COLORGREEN)
@@ -86,6 +92,14 @@ class SparkService : Service() {
                     robot_char_control.value = colorrgbcmd
                     val status = gatt.writeCharacteristic(robot_char_control)
                 }
+                SETBACKLED -> {
+                    val value = incomingMessage.data.getByte(BACKLED)
+                    val cmd = command.setBackLedCmd(value)
+                    Log.d(TAG, "Setting BACK LED to $value ...${command.dump(cmd)}")
+                    robot_char_control.value = cmd
+                    val status = gatt.writeCharacteristic(robot_char_control)
+                }
+
             // PING->gatt.writeCharacteristic()
             }
         }
@@ -109,6 +123,9 @@ class SparkService : Service() {
             gatt?.services?.let {
                 findAllCharacteristics(it)
                 gatt.writeCharacteristic(radio_anti_dos)
+                var bundle = Bundle()
+                bundle.putParcelableArray(FOUNDSERVICES, gatt.services.toTypedArray())
+                sendMessage(SERVICESDISCOVERED)
             }
 
         }
@@ -128,22 +145,20 @@ class SparkService : Service() {
                     ANTI_DOS_CHAR_UUID -> gatt!!.writeCharacteristic(radio_tx_pwr)
                     TX_PWR_CHAR_UUID -> gatt!!.writeCharacteristic(wakeup)
                     WAKEUP_CHAR_UUID -> {
+                        gatt?.let {
+                           sendMessage(CONNECTED)
+                        }
 //                        var cmd = command.setBackLedCmd(0x255.toByte())
 //                        robot_char_control.value = cmd
 //                        var status = gatt!!.writeCharacteristic(robot_char_control)
 //                        Log.d(TAG,"Set back led cmd sent, status:${status}, ${command.dump(cmd)}")
-
-                        var cmd = command.setRgbLedCmd(0x255.toByte(),0x255.toByte(),0.toByte())
-                        robot_char_control.value = cmd
-                        var status = gatt!!.writeCharacteristic(robot_char_control)
-                        Log.d(TAG,"Red color cmd sent, status:${status}, ${command.dump(cmd)}")
 
 //                        val bundle = Bundle()
 //                        bundle.putParcelableArray("services", gatt!!.services.toTypedArray())
 //                        sendMessage(SERVICESDISCOVERED, bundle = bundle)
                     }
                     else -> {
-                        Log.d(TAG,"Successful ${characteristic.uuid}")
+                        Log.d(TAG, "Successful ${characteristic.uuid}")
                     }
                 }
             } else {
@@ -153,6 +168,7 @@ class SparkService : Service() {
     }
 
     override fun onUnbind(intent: Intent?): Boolean {
+        gatt?.disconnect()
         return super.onUnbind(intent)
     }
 

@@ -5,4 +5,6 @@
     <string name="power_level">"RSSI: %1$d"</string>
     <string name="connectable">"Connectable: %1$d"</string>
     <string name="seekbar_label">"MINUTES: %1$d"</string>
+    <string name="back_led_label">BACK LED</string>
+    <string name="connecting_warning">Connecting to device...</string>
 </resources>

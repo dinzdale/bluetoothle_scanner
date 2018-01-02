@@ -1,5 +1,6 @@
 package com.sample.garyjacobs.bluetoothle_scanner
 
+import android.app.AlertDialog
 import android.app.Fragment
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothGatt
@@ -8,12 +9,14 @@ import android.content.ComponentName
 import android.content.Context.BIND_AUTO_CREATE
 import android.content.Intent
 import android.content.ServiceConnection
+import android.content.res.TypedArray
 import android.graphics.Color
 import android.os.*
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
 import com.sample.garyjacobs.bluetoothle_scanner.utils.BleNamesResolver
@@ -27,12 +30,12 @@ import kotlinx.android.synthetic.main.spark_main_fragment.*
 class SparkMainFragment() : Fragment() {
     val TAG = SparkMainFragment::class.java.simpleName
     val command = Command()
-    lateinit var statusTF: TextView
+    var connectingDlg: AlertDialog? = null
     lateinit var device: BluetoothDevice
     lateinit var inboundMessenger: Messenger
     lateinit var outboundMessenger: Messenger
     var bound = false
-
+    var connected = false
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View {
         return inflater?.inflate(R.layout.spark_main_fragment, null)!!
@@ -63,15 +66,27 @@ class SparkMainFragment() : Fragment() {
             sendMessage(SparkService.SETCOLORRGB, bundle)
         }
 
-        send_color.setOnClickListener() {
-            val colors = ColorToHex(color_picker_view.selectedColor)
-            val bundle = Bundle()
-            bundle.putByte(SparkService.COLORRED, colors.first)
-            bundle.putByte(SparkService.COLORGREEN, colors.second)
-            bundle.putByte(SparkService.COLORBLUE, colors.third)
-            sendMessage(SparkService.SETCOLORRGB, bundle)
-        }
+        back_led_sb.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                val bundle = Bundle()
+                bundle.putByte(SparkService.BACKLED, progress.toByte())
+                sendMessage(SparkService.SETBACKLED, bundle)
+            }
+
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {
+            }
+
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {
+            }
+        })
+
+        connectingDlg = AlertDialog.Builder(this.context)
+                .setIcon(android.R.drawable.ic_dialog_alert)
+                .setMessage(R.string.connecting_warning)
+                .show()
+
     }
+
 
     fun ColorToHex(intColor: Int): Triple<Byte, Byte, Byte> {
 
@@ -99,18 +114,16 @@ class SparkMainFragment() : Fragment() {
 
         override fun handleMessage(msg: Message?) {
             when (msg!!.what) {
-                SparkService.CONNECTING -> statusTF.text = "CONNECTING"
-                SparkService.CONNECTIONSTATECHANGED ->
-                    if (msg.arg1 == BluetoothGatt.GATT_SUCCESS) when (msg.arg2) {
+                SparkService.CONNECTING -> activity?.title =
+                        "Connecting to device..."
+                SparkService.CONNECTIONSTATECHANGED -> if (msg.arg1 == BluetoothGatt.GATT_SUCCESS) {
+                    when (msg.arg2) {
                         BluetoothGatt.STATE_CONNECTED -> handleConnected()
                         BluetoothGatt.STATE_DISCONNECTED -> handleDisconnected()
                     }
-                SparkService.SERVICESDISCOVERED -> {
-                    handleServices(msg.data.get("services") as Array<BluetoothGattService>)
-
                 }
-                SparkService.SETCOLORRGBRESPONSE -> {
-                }
+                //SparkService.SERVICESDISCOVERED -> handleServices(msg.data.get(SparkService.FOUNDSERVICES) as Array<BluetoothGattService>)
+                SparkService.CONNECTED -> connectingDlg?.hide()
                 SparkService.SERVICEDISCONNECTED -> handleDisconnected()
 
             }
@@ -118,8 +131,7 @@ class SparkMainFragment() : Fragment() {
     }
 
     fun handleConnected() = {
-        //statusTF.text = "Device connected...Waiting For Services"'
-        Toast.makeText(this.context, "Device Connected", Toast.LENGTH_LONG).show()
+        activity.title = "Device connected...Waiting For Services"
     }
 
     fun handleDisconnected() = {
@@ -128,24 +140,7 @@ class SparkMainFragment() : Fragment() {
     }
 
     fun handleServices(services: Array<BluetoothGattService>) {
-
-        //statusTF.text = "${services.size} Services Found"
-        Log.d(TAG, "${services.size} services found")
-        services.forEachIndexed { index, bluetoothGattService ->
-            Log.d(TAG, "SERVICE $index ${bluetoothGattService.uuid}:${BleNamesResolver.resolveUuid(bluetoothGattService.uuid.toString())}")
-            bluetoothGattService.includedServices.forEachIndexed { index, bluetoothGattService ->
-                Log.d(TAG, "included service $index UUID: ${bluetoothGattService.uuid}:${BleNamesResolver.resolveUuid(bluetoothGattService.uuid.toString())}")
-            }
-            bluetoothGattService.characteristics.forEachIndexed { index, bluetoothGattCharacteristic ->
-                val uuid = bluetoothGattCharacteristic.uuid
-                Log.d(TAG, "characterisitic $index UUID: ${uuid}:${BleNamesResolver.resolveCharacteristicName(uuid.toString())}")
-                bluetoothGattCharacteristic.descriptors.forEachIndexed { index, bluetoothGattDescriptor ->
-                    val uuid = bluetoothGattCharacteristic.uuid
-                    Log.d(TAG, "descriptor $index desc: ${uuid}:${BleNamesResolver.resolveCharacteristicName(uuid.toString())}")
-                }
-            }
-        }
-        sendMessage(SparkService.DISCONNECTFROMSERVICE)
+        activity.title = "Services found, have fun!!"
     }
 
     val serviceConnection = object : ServiceConnection {
