@@ -76,21 +76,7 @@ class SparkService : Service() {
                     gatt = device.connectGatt(context, true, gattCallBack)
                 }
                 DISCONNECTFROMSERVICE -> gatt.disconnect()
-                PING -> {
-                    var cmd = command.pingCMD()
-                    Log.d(TAG, "ping cmd: ${command.dump(cmd)}")
-                    robot_char_control.value = cmd
-                    var status = gatt.writeCharacteristic(robot_char_control)
-//                    Log.d(TAG, "Get Ping result...")
-//                    status = gatt.readCharacteristic(robot_char_response)
-                    // get information
-                    cmd = command.getBTInfo()
-                    Log.d(TAG, "BTInfo cmd: ${command.dump(cmd)}")
-                    robot_char_control.value = cmd
-                    status = gatt.writeCharacteristic(robot_char_response)
-                    Log.d(TAG, "BTInfo status: ${status}")
-
-                }
+                PING -> { }
                 SETCOLORRGB -> {
                     val red = incomingMessage.data.getByte(COLORRED)
                     val green = incomingMessage.data.getByte(COLORGREEN)
@@ -110,7 +96,9 @@ class SparkService : Service() {
         override fun onConnectionStateChange(gatt: BluetoothGatt?, status: Int, newState: Int) {
             sendMessage(CONNECTIONSTATECHANGED, status, newState)
             when (newState) {
-                BluetoothGatt.STATE_CONNECTED -> gatt?.discoverServices()
+                BluetoothGatt.STATE_CONNECTED -> {
+                    gatt?.discoverServices()
+                }
                 BluetoothGatt.STATE_DISCONNECTED -> sendMessage(SERVICEDISCONNECTED)
             }
 
@@ -140,11 +128,23 @@ class SparkService : Service() {
                     ANTI_DOS_CHAR_UUID -> gatt!!.writeCharacteristic(radio_tx_pwr)
                     TX_PWR_CHAR_UUID -> gatt!!.writeCharacteristic(wakeup)
                     WAKEUP_CHAR_UUID -> {
-                        val bundle = Bundle()
-                        bundle.putParcelableArray("services", gatt.services.toTypedArray())
-                        sendMessage(SERVICESDISCOVERED, bundle = bundle)
-                    }
+//                        var cmd = command.setBackLedCmd(0x255.toByte())
+//                        robot_char_control.value = cmd
+//                        var status = gatt!!.writeCharacteristic(robot_char_control)
+//                        Log.d(TAG,"Set back led cmd sent, status:${status}, ${command.dump(cmd)}")
 
+                        var cmd = command.setRgbLedCmd(0x255.toByte(),0x255.toByte(),0.toByte())
+                        robot_char_control.value = cmd
+                        var status = gatt!!.writeCharacteristic(robot_char_control)
+                        Log.d(TAG,"Red color cmd sent, status:${status}, ${command.dump(cmd)}")
+
+//                        val bundle = Bundle()
+//                        bundle.putParcelableArray("services", gatt!!.services.toTypedArray())
+//                        sendMessage(SERVICESDISCOVERED, bundle = bundle)
+                    }
+                    else -> {
+                        Log.d(TAG,"Successful ${characteristic.uuid}")
+                    }
                 }
             } else {
                 Log.d(TAG, "write failed: status: $status")

@@ -223,6 +223,7 @@ class BLEScannerFragment : Fragment() {
                 val scanResult = adapter.scanResultList[position]
                 Toast.makeText(view.context, "Item Clicked at $position : ${scanResult.scanRecord.deviceName}", Toast.LENGTH_LONG).show()
                 if (scanResult?.device?.address.equals(SparkService.DEVICEADDRESS)) {
+                    scannerFrag.scanStartStopButton.performClick()
                     var bundle = Bundle()
                     bundle.putParcelable(SparkService.DEVICEADDRESS, scanResult.device)
                     var frag = SparkMainFragment()

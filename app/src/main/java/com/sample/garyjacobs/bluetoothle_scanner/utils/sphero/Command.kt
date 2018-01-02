@@ -52,13 +52,13 @@ data class Command(val void: Unit? = null) {
     }
 
     fun getRgbLedCmd(seq: Byte = NILL): ByteArray {
-        val buffer = arrayOf(SOP1, getSOP2NoTOReply(), DID_SPHERO, CMD_SPHERO_GET_RGB_LED, seq, 0x01, NILL, NILL)
+        val buffer = arrayOf(SOP1, getSOP2NoTO(), DID_SPHERO, CMD_SPHERO_GET_RGB_LED, seq, 0x01, NILL, NILL)
         buffer[buffer.size - 1] = getChk(buffer.sliceArray(2..buffer.size - 2))
         return buffer.toByteArray()
     }
 
     fun setBackLedCmd(alpha: Byte = NILL, seq: Byte = NILL): ByteArray {
-        val buffer = arrayOf(SOP1, getSOP2NoTO(), DID_SPHERO, CMD_SPHERO_SET_BACK_LED, seq, 0x02, NILL, NILL)
+        val buffer = arrayOf(SOP1, getSOP2NoTOReply(), DID_SPHERO, CMD_SPHERO_SET_BACK_LED, seq, 0x02, NILL, NILL)
         buffer[buffer.size - 1] = getChk(buffer.sliceArray(2..buffer.size - 2))
         return buffer.toByteArray()
     }
