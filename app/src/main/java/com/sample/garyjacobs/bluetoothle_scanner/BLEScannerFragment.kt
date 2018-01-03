@@ -26,6 +26,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import kotlinx.android.synthetic.main.bluetooth_scanned_list.*
+
 import kotlin.collections.ArrayList
 
 /**
@@ -38,30 +39,29 @@ class BLEScannerFragment : Fragment() {
 
     var handler: Handler = Handler()
 
-    lateinit var scanStartStopButton: Button
-    lateinit var scannedListView: RecyclerView
-    lateinit var intervalSeekBar: SeekBar
-    lateinit var intervalInfinityButton: ImageButton
-    lateinit var intervalSeekBarLabel: TextView
+    var myActivity: MainActivity? = null
     var scanning: Boolean = false
 
     lateinit var bluetoothAdapter: BluetoothAdapter
     var scanRecords: ArrayList<ScanResult> = ArrayList<ScanResult>()
+    override fun onAttach(context: Context?) {
+        super.onAttach(context)
+        myActivity = activity as MainActivity
+    }
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        val scannedListLayout = inflater!!.inflate(R.layout.bluetooth_scanned_list, null) as View
-        scanStartStopButton = scannedListLayout.findViewById<Button>(R.id.scan_startstop_button)
-        scannedListView = scannedListLayout.findViewById<RecyclerView>(R.id.scan_results_listview)
-        intervalSeekBar = scannedListLayout.findViewById<SeekBar>(R.id.scan_interval_seekbar)
-        intervalInfinityButton = scannedListLayout.findViewById<ImageButton>(R.id.interval_infinity_button)
-        intervalInfinityButton.setOnClickListener(intervalInfinityListener)
-        intervalSeekBar.setOnSeekBarChangeListener(seekBarListener)
-        intervalSeekBarLabel = scannedListLayout.findViewById<TextView>(R.id.current_progress_textfield)
+        return inflater!!.inflate(R.layout.bluetooth_scanned_list, null) as View
+    }
+
+    override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
+
+        interval_infinity_button.setOnClickListener(intervalInfinityListener)
+        scan_interval_seekbar.setOnSeekBarChangeListener(seekBarListener)
 
         val linearLayoutManager = LinearLayoutManager(this.activity)
         linearLayoutManager.orientation = LinearLayoutCompat.VERTICAL
-        scannedListView.layoutManager = linearLayoutManager
-        scannedListView.adapter = MyListAdapter(scanRecords, ListItemClickListener(this))
+        scan_results_listview.layoutManager = linearLayoutManager
+        scan_results_listview.adapter = MyListAdapter(scanRecords, ListItemClickListener())
 
         setScanButtonLabel(scanning)
 
@@ -89,18 +89,18 @@ class BLEScannerFragment : Fragment() {
 
         }
 
-        scanStartStopButton?.setOnClickListener(object : View.OnClickListener {
-            override fun onClick(view: View?) {
-                scanRecords.clear()
-                scannedListView.adapter.notifyDataSetChanged()
-                scanning = scanning.not()
-                setScanButtonLabel(scanning)
-                scanBLEDevices(scanning)
-            }
-        })
+        scan_startstop_button?.setOnClickListener(
+                object : View.OnClickListener {
+                    override fun onClick(view: View?) {
+                        scanRecords.clear()
+                        scan_results_listview.adapter.notifyDataSetChanged()
+                        scanning = scanning.not()
+                        setScanButtonLabel(scanning)
+                        scanBLEDevices(scanning)
+                    }
+                })
 
 
-        return scannedListLayout
     }
 
     override fun onStart() {
@@ -136,7 +136,8 @@ class BLEScannerFragment : Fragment() {
     val intervalInfinityListener = object : View.OnClickListener {
         override fun onClick(view: View?) {
             scanBLEDevices(false)
-            intervalSeekBar.progress = 0
+            scan_interval_seekbar.progress = 0
+            setScanButtonLabel(true)
             scanBLEDevices(true, false)
         }
     }
@@ -150,9 +151,9 @@ class BLEScannerFragment : Fragment() {
     }
 
     fun setScanButtonLabel(onOff: Boolean) = if (onOff) {
-        scanStartStopButton.text = "Stop Scan"
+        scan_startstop_button.text = "Stop Scan"
     } else {
-        scanStartStopButton.text = "Start Scan"
+        scan_startstop_button.text = "Start Scan"
     }
 
     fun scanBLEDevices(enable: Boolean = false, timed: Boolean = true) {
@@ -162,7 +163,7 @@ class BLEScannerFragment : Fragment() {
         if (enable) {
             // start scan
             if (timed) {
-                handler.postDelayed(stopScanningTask, minutesMillis(intervalSeekBar.progress + 1))
+                handler.postDelayed(stopScanningTask, minutesMillis(scan_interval_seekbar.progress + 1))
             }
             scanning = true
             bluetoothAdapter.bluetoothLeScanner?.startScan(scanCallBack)
@@ -193,11 +194,11 @@ class BLEScannerFragment : Fragment() {
                 })
                 if (index == -1) {
                     scanRecords.add(result)
-                    scannedListView.adapter.notifyDataSetChanged()
+                    scan_results_listview.adapter.notifyDataSetChanged()
                 } else {
                     Log.i(TAG, "Updating ${result.scanRecord.toString()}")
                     scanRecords[index] = result
-                    scannedListView.adapter.notifyItemChanged(index)
+                    scan_results_listview.adapter.notifyItemChanged(index)
                 }
             }
             Log.i(TAG, " ScanCallback: callbackType: $callbackType result: ${result.toString()}")
@@ -215,23 +216,17 @@ class BLEScannerFragment : Fragment() {
 
     }
 
-    class ListItemClickListener(val scannerFrag: BLEScannerFragment) : View.OnClickListener {
+    inner class ListItemClickListener() : View.OnClickListener {
         override fun onClick(view: View?) {
             view?.let {
-                scannerFrag.scanBLEDevices()
-                val position = scannerFrag.scannedListView.getChildAdapterPosition(view)
-                val adapter = scannerFrag.scannedListView.adapter as MyListAdapter
+                val position = this@BLEScannerFragment.scan_results_listview.getChildAdapterPosition(view)
+                val adapter = this@BLEScannerFragment.scan_results_listview.adapter as MyListAdapter
                 val scanResult = adapter.scanResultList[position]
-                Toast.makeText(view.context, "Item Clicked at $position : ${scanResult.scanRecord.deviceName}", Toast.LENGTH_LONG).show()
                 if (scanResult?.device?.address.equals(SparkService.DEVICEADDRESS)) {
+                    this@BLEScannerFragment.scan_startstop_button.performClick()
                     var bundle = Bundle()
                     bundle.putParcelable(SparkService.DEVICEADDRESS, scanResult.device)
-                    var frag = SparkMainFragment()
-                    frag.arguments = bundle
-                    val fragmentManager = (view.context as Activity).fragmentManager
-                    fragmentManager.beginTransaction()
-                            .replace(R.id.main_container, frag)
-                            .commit()
+                    myActivity?.OnBTItemSelected(bundle)
                 }
             }
         }
