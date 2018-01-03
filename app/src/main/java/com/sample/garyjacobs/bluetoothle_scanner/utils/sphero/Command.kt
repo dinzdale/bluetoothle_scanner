@@ -63,8 +63,8 @@ data class Command(val void: Unit? = null) {
         return buffer.toByteArray()
     }
 
-    fun setRollCmd(directionX: Byte, directionY: Byte, speed: Byte = 100, seq: Byte = NILL): ByteArray {
-        val buffer = arrayOf(SOP1, getSOP2NoTO(), DID_SPHERO, CMD_SPHERO_SET_ROLL, seq, 0x05, speed, directionX, directionY, NILL, NILL)
+    fun setRollCmd(headingX: Byte, headingY: Byte, speed: Byte = 100, seq: Byte = NILL): ByteArray {
+        val buffer = arrayOf(SOP1, getSOP2NoTOReply(), DID_SPHERO, CMD_SPHERO_SET_ROLL, seq, 0x05, speed, headingX, headingY, NILL, NILL)
         buffer[buffer.size - 1] = getChk(buffer.sliceArray(2..buffer.size - 2))
         return buffer.toByteArray()
     }

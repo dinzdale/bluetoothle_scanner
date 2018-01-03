@@ -2,18 +2,21 @@
 <android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:background="@android:color/background_light"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:textAlignment="inherit">
 
     <com.flask.colorpicker.ColorPickerView
         android:id="@+id/color_picker_view"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="16dp"
-        android:layout_marginStart="16dp"
+        android:layout_width="352dp"
+        android:layout_height="339dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.75"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:wheelType="FLOWER" />
@@ -38,7 +41,7 @@
         android:id="@+id/textView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="8dp"
         android:text="@string/back_led_label"
         android:textAppearance="@style/TextAppearance.AppCompat"
         android:textSize="12sp"
@@ -49,4 +52,62 @@
         app:layout_constraintTop_toBottomOf="@+id/color_picker_view" />
 
 
+    <com.sample.garyjacobs.bluetoothle_scanner.CircularSeekBar
+        android:id="@+id/spin_sb"
+        android:layout_width="190dp"
+        android:layout_height="175dp"
+        android:layout_marginBottom="8dp"
+        android:layout_marginLeft="16dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="8dp"
+        app:circle_color="@android:color/holo_orange_light"
+        app:circle_stroke_width="15dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/back_led_sb"
+        app:layout_constraintVertical_bias="0.0"
+        app:lock_enabled="true"
+        app:maintain_equal_circle="true"
+        app:max="255"
+        app:move_outside_circle="false"
+        app:pointer_halo_border_width="10dp"
+        app:pointer_halo_width="5dp"
+        app:pointer_radius="10dp"
+        app:progress="0"
+        app:use_custom_radii="false" />
+
+
+    <ScrollView
+        android:id="@+id/service_sv"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
+        android:scrollbarAlwaysDrawVerticalTrack="true"
+        app:layout_constraintBottom_toBottomOf="@+id/spin_sb"
+        app:layout_constraintEnd_toEndOf="@+id/back_led_sb"
+        app:layout_constraintHorizontal_bias="0.25"
+        app:layout_constraintStart_toEndOf="@+id/spin_sb"
+        app:layout_constraintTop_toTopOf="@+id/spin_sb"
+        app:layout_constraintVertical_bias="0.0">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <TextView
+                android:id="@+id/services_tf"
+                android:layout_width="165dp"
+                android:layout_height="113dp"
+                android:lines="10"
+                android:text="I was so much older then
+I'm younger than that
+now"
+                tools:layout_editor_absoluteX="238dp"
+                tools:layout_editor_absoluteY="482dp" />
+
+        </FrameLayout>
+    </ScrollView>
 </android.support.constraint.ConstraintLayout>

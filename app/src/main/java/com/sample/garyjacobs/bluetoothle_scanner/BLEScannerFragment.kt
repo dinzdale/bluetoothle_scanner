@@ -43,11 +43,15 @@ class BLEScannerFragment : Fragment() {
     lateinit var intervalSeekBar: SeekBar
     lateinit var intervalInfinityButton: ImageButton
     lateinit var intervalSeekBarLabel: TextView
+    var myActivity : MainActivity? = null
     var scanning: Boolean = false
 
     lateinit var bluetoothAdapter: BluetoothAdapter
     var scanRecords: ArrayList<ScanResult> = ArrayList<ScanResult>()
-
+    override fun onAttach(context: Context?) {
+        super.onAttach(context)
+        myActivity = activity as MainActivity
+    }
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val scannedListLayout = inflater!!.inflate(R.layout.bluetooth_scanned_list, null) as View
         scanStartStopButton = scannedListLayout.findViewById<Button>(R.id.scan_startstop_button)
@@ -61,7 +65,7 @@ class BLEScannerFragment : Fragment() {
         val linearLayoutManager = LinearLayoutManager(this.activity)
         linearLayoutManager.orientation = LinearLayoutCompat.VERTICAL
         scannedListView.layoutManager = linearLayoutManager
-        scannedListView.adapter = MyListAdapter(scanRecords, ListItemClickListener(this))
+        scannedListView.adapter = MyListAdapter(scanRecords, ListItemClickListener())
 
         setScanButtonLabel(scanning)
 
@@ -215,24 +219,17 @@ class BLEScannerFragment : Fragment() {
 
     }
 
-     class ListItemClickListener(val scannerFrag: BLEScannerFragment) : View.OnClickListener {
+     inner class ListItemClickListener() : View.OnClickListener {
         override fun onClick(view: View?) {
             view?.let {
-                val position = scannerFrag.scannedListView.getChildAdapterPosition(view)
-                val adapter = scannerFrag.scannedListView.adapter as MyListAdapter
+                val position = this@BLEScannerFragment.scannedListView.getChildAdapterPosition(view)
+                val adapter = this@BLEScannerFragment.scannedListView.adapter as MyListAdapter
                 val scanResult = adapter.scanResultList[position]
-                Toast.makeText(view.context, "Item Clicked at $position : ${scanResult.scanRecord.deviceName}", Toast.LENGTH_LONG).show()
                 if (scanResult?.device?.address.equals(SparkService.DEVICEADDRESS)) {
-                    scannerFrag.scanStartStopButton.performClick()
+                    this@BLEScannerFragment.scanStartStopButton.performClick()
                     var bundle = Bundle()
                     bundle.putParcelable(SparkService.DEVICEADDRESS, scanResult.device)
-                    var frag = SparkMainFragment()
-                    frag.arguments = bundle
-                    val fragmentManager = (view.context as Activity).fragmentManager
-                    fragmentManager.beginTransaction()
-                            .replace(R.id.main_container, frag)
-                            .addToBackStack(null)
-                            .commit()
+                    myActivity?.OnBTItemSelected(bundle)
                 }
             }
         }

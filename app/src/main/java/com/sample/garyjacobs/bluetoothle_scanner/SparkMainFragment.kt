@@ -21,7 +21,6 @@ import android.widget.TextView
 import android.widget.Toast
 import com.sample.garyjacobs.bluetoothle_scanner.utils.BleNamesResolver
 import com.sample.garyjacobs.bluetoothle_scanner.utils.sphero.Command
-import kotlinx.android.synthetic.main.color_control_layout.*
 import kotlinx.android.synthetic.main.spark_main_fragment.*
 
 /**
@@ -80,87 +79,106 @@ class SparkMainFragment() : Fragment() {
             }
         })
 
-        connectingDlg = AlertDialog.Builder(this.context)
-                .setIcon(android.R.drawable.ic_dialog_alert)
-                .setMessage(R.string.connecting_warning)
-                .show()
-
-    }
-
-
-    fun ColorToHex(intColor: Int): Triple<Byte, Byte, Byte> {
-
-        val red = Color.red(intColor).toByte()
-        val green = Color.green(intColor).toByte()
-        val blue = Color.blue(intColor).toByte()
-        return Triple(red, green, blue)
-    }
-
-    override fun onResume() {
-        super.onResume()
-        var intent = Intent(this.context, SparkService::class.java)
-        intent.putExtra(SparkService.DEVICEADDRESS, device)
-        this.context.bindService(intent, serviceConnection, BIND_AUTO_CREATE)
-    }
-
-    override fun onPause() {
-        super.onPause()
-        var intent = Intent(this.context, SparkService::class.java)
-        intent.putExtra(SparkService.DEVICEADDRESS, device)
-        this.context.unbindService(serviceConnection)
-    }
-
-    inner class InboundHandler : Handler() {
-
-        override fun handleMessage(msg: Message?) {
-            when (msg!!.what) {
-                SparkService.CONNECTING -> activity?.title =
-                        "Connecting to device..."
-                SparkService.CONNECTIONSTATECHANGED -> if (msg.arg1 == BluetoothGatt.GATT_SUCCESS) {
-                    when (msg.arg2) {
-                        BluetoothGatt.STATE_CONNECTED -> handleConnected()
-                        BluetoothGatt.STATE_DISCONNECTED -> handleDisconnected()
-                    }
-                }
-                //SparkService.SERVICESDISCOVERED -> handleServices(msg.data.get(SparkService.FOUNDSERVICES) as Array<BluetoothGattService>)
-                SparkService.CONNECTED -> connectingDlg?.hide()
-                SparkService.SERVICEDISCONNECTED -> handleDisconnected()
-
+        spin_sb.setOnSeekBarChangeListener(object : CircularSeekBar.OnCircularSeekBarChangeListener {
+            override fun onProgressChanged(circularSeekBar: CircularSeekBar?, progress: Int, fromUser: Boolean) {
+                val bundle = Bundle()
+                val progB = progress.toByte()
+                Log.d(TAG, "******Y seekbar value ${String.format("%2X",progB)}h")
+                bundle.putByte(SparkService.SPEED, 50.toByte())
+                bundle.putByte(SparkService.HEADING_X,0.toByte())
+                bundle.putByte(SparkService.HEADING_Y, progB)
+                sendMessage(SparkService.SETROLL, bundle)
             }
+
+            override fun onStopTrackingTouch(seekBar: CircularSeekBar?) {
+            }
+
+            override fun onStartTrackingTouch(seekBar: CircularSeekBar?) {
+            }
+        })
+
+
+    connectingDlg = AlertDialog.Builder(this.context)
+    .setIcon(android.R.drawable.ic_dialog_alert)
+    .setMessage(R.string.connecting_warning)
+    .show()
+
+}
+
+
+fun ColorToHex(intColor: Int): Triple<Byte, Byte, Byte> {
+
+    val red = Color.red(intColor).toByte()
+    val green = Color.green(intColor).toByte()
+    val blue = Color.blue(intColor).toByte()
+    return Triple(red, green, blue)
+}
+
+override fun onResume() {
+    super.onResume()
+    var intent = Intent(this.context, SparkService::class.java)
+    intent.putExtra(SparkService.DEVICEADDRESS, device)
+    this.context.bindService(intent, serviceConnection, BIND_AUTO_CREATE)
+}
+
+override fun onPause() {
+    super.onPause()
+    var intent = Intent(this.context, SparkService::class.java)
+    intent.putExtra(SparkService.DEVICEADDRESS, device)
+    this.context.unbindService(serviceConnection)
+}
+
+inner class InboundHandler : Handler() {
+
+    override fun handleMessage(msg: Message?) {
+        when (msg!!.what) {
+            SparkService.CONNECTING -> activity?.title =
+                    "Connecting to device..."
+            SparkService.CONNECTIONSTATECHANGED -> if (msg.arg1 == BluetoothGatt.GATT_SUCCESS) {
+                when (msg.arg2) {
+                    BluetoothGatt.STATE_CONNECTED -> handleConnected()
+                    BluetoothGatt.STATE_DISCONNECTED -> handleDisconnected()
+                }
+            }
+        //SparkService.SERVICESDISCOVERED -> handleServices(msg.data.get(SparkService.FOUNDSERVICES) as Array<BluetoothGattService>)
+            SparkService.CONNECTED -> connectingDlg?.hide()
+            SparkService.SERVICEDISCONNECTED -> handleDisconnected()
+
         }
     }
+}
 
-    fun handleConnected() = {
-        activity.title = "Device connected...Waiting For Services"
+fun handleConnected() = {
+    activity.title = "Device connected...Waiting For Services"
+}
+
+fun handleDisconnected() = {
+    //statusTF.text = "Device disconnected..."
+    Toast.makeText(this.context, "Device DISCONNECTED", Toast.LENGTH_LONG).show()
+}
+
+fun handleServices(services: Array<BluetoothGattService>) {
+    activity.title = "Services found, have fun!!"
+}
+
+val serviceConnection = object : ServiceConnection {
+    override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+        bound = true
+        outboundMessenger = Messenger(service)
+        inboundMessenger = Messenger(InboundHandler())
+        sendMessage(SparkService.CONNECT)
     }
 
-    fun handleDisconnected() = {
-        //statusTF.text = "Device disconnected..."
-        Toast.makeText(this.context, "Device DISCONNECTED", Toast.LENGTH_LONG).show()
+    override fun onServiceDisconnected(name: ComponentName?) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
+}
 
-    fun handleServices(services: Array<BluetoothGattService>) {
-        activity.title = "Services found, have fun!!"
-    }
-
-    val serviceConnection = object : ServiceConnection {
-        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-            bound = true
-            outboundMessenger = Messenger(service)
-            inboundMessenger = Messenger(InboundHandler())
-            sendMessage(SparkService.CONNECT)
-        }
-
-        override fun onServiceDisconnected(name: ComponentName?) {
-            TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-        }
-    }
-
-    fun sendMessage(messageNumber: Int, bundle: Bundle? = null) {
-        var message = Message.obtain()
-        message.replyTo = inboundMessenger
-        message.what = messageNumber
-        bundle?.let { message.data = bundle }
-        outboundMessenger.send(message)
-    }
+fun sendMessage(messageNumber: Int, bundle: Bundle? = null) {
+    var message = Message.obtain()
+    message.replyTo = inboundMessenger
+    message.what = messageNumber
+    bundle?.let { message.data = bundle }
+    outboundMessenger.send(message)
+}
 }

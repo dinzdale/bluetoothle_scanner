@@ -36,12 +36,17 @@ class SparkService : Service() {
         val PINGRESULT = -20
         val SETCOLORRGB = 30
         val SETBACKLED = 40
+        val SETROLL = 50
+
         // bundle keys
         val COLORRED = "RED"
         val COLORGREEN = "GREEN"
         val COLORBLUE = "BLUE"
         val BACKLED = "BACKLED"
         val FOUNDSERVICES = "FOUNDSERVICES"
+        val SPEED = "SPEED"
+        val HEADING_X = "HEADING_X"
+        val HEADING_Y = "HEADING_Y"
 
         // wake up codes
         val ANTIDOS = "011i3".toByteArray()
@@ -99,6 +104,15 @@ class SparkService : Service() {
                     robot_char_control.value = cmd
                     val status = gatt.writeCharacteristic(robot_char_control)
                 }
+                SETROLL -> {
+                    val speed = incomingMessage.data.getByte(SPEED)
+                    val heading_x = incomingMessage.data.getByte(HEADING_X)
+                    val heading_y = incomingMessage.data.getByte(HEADING_Y)
+                    val cmd = command.setRollCmd(heading_x,heading_y,speed)
+                    Log.d(TAG, "Setting ROLL to S: $speed Hx: $heading_x Hy: $heading_y ...${command.dump(cmd)}")
+                    robot_char_control.value = cmd
+                    val status = gatt.writeCharacteristic(robot_char_control)
+                }
 
             // PING->gatt.writeCharacteristic()
             }
@@ -145,9 +159,15 @@ class SparkService : Service() {
                     ANTI_DOS_CHAR_UUID -> gatt!!.writeCharacteristic(radio_tx_pwr)
                     TX_PWR_CHAR_UUID -> gatt!!.writeCharacteristic(wakeup)
                     WAKEUP_CHAR_UUID -> {
-                        gatt?.let {
-                           sendMessage(CONNECTED)
-                        }
+                        sendMessage(CONNECTED)
+
+//                        robot_char_control.value = cmd
+//                        var status = gatt!!.writeCharacteristic(robot_char_control)
+//                        Log.d(TAG,"Set back led cmd sent, status:${status}, ${command.dump(cmd)}")
+
+//                        gatt?.let {
+//                            sendMessage(CONNECTED)
+//                        }
 //                        var cmd = command.setBackLedCmd(0x255.toByte())
 //                        robot_char_control.value = cmd
 //                        var status = gatt!!.writeCharacteristic(robot_char_control)

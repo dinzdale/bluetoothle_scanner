@@ -1,5 +1,6 @@
 package com.sample.garyjacobs.bluetoothle_scanner
 
+import android.app.Activity
 import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.support.v4.app.FragmentManager
@@ -9,7 +10,7 @@ import android.widget.FrameLayout
 /**
  * Created by garyjacobs on 9/2/17.
  */
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), BTItemSelected {
 
     lateinit var mainContainer: FrameLayout
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -18,7 +19,37 @@ class MainActivity : AppCompatActivity() {
         mainContainer = findViewById<FrameLayout>(R.id.main_container)
         supportFragmentManager
                 .beginTransaction()
-                .replace(R.id.main_container, BLEScannerFragment())
+                .add(R.id.main_container, BLEScannerFragment())
                 .commit()
     }
+
+    override fun OnBTItemSelected(bundle: Bundle) {
+        var newFragment = SparkMainFragment()
+        newFragment.arguments = bundle
+        fragmentManager.beginTransaction()
+                .replace(R.id.main_container,newFragment)
+                .addToBackStack(null)
+                .commit()
+    }
+//    override fun OnBTItemSelected() {
+//        var bundle = Bundle()
+//        bundle.putParcelable(SparkService.DEVICEADDRESS, scanResult.device)
+//        var frag = SparkMainFragment()
+//        frag.arguments = bundle
+//        val fragmentManager = (view.context as Activity).fragmentManager
+//        fragmentManager.beginTransaction()
+//                .replace(R.id.main_container, frag)
+//                .addToBackStack(null)
+//                .commit()
+//        supportFragmentManager
+//                .beginTransaction()
+//                .replace(R.id.main_container, SparkMainFragment())
+//                .addToBackStack(null)
+//                .commit()
+//
+//    }
+}
+
+interface BTItemSelected {
+    fun OnBTItemSelected(bundle: Bundle)
 }
