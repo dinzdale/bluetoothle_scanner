@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.res.TypedArray
 import android.os.*
 import android.util.Log
+import com.sample.garyjacobs.bluetoothle_scanner.utils.BleNamesResolver
 import com.sample.garyjacobs.bluetoothle_scanner.utils.sphero.Command
 import com.sample.garyjacobs.bluetoothle_scanner.utils.sphero.Response
 
@@ -108,7 +109,7 @@ class SparkService : Service() {
                     val speed = incomingMessage.data.getByte(SPEED)
                     val heading_x = incomingMessage.data.getByte(HEADING_X)
                     val heading_y = incomingMessage.data.getByte(HEADING_Y)
-                    val cmd = command.setRollCmd(heading_x,heading_y,speed)
+                    val cmd = command.setRollCmd(heading_x, heading_y, speed)
                     Log.d(TAG, "Setting ROLL to S: $speed Hx: $heading_x Hy: $heading_y ...${command.dump(cmd)}")
                     robot_char_control.value = cmd
                     val status = gatt.writeCharacteristic(robot_char_control)
@@ -136,10 +137,11 @@ class SparkService : Service() {
 
             gatt?.services?.let {
                 findAllCharacteristics(it)
-                gatt.writeCharacteristic(radio_anti_dos)
+                var formattedServices = formatServices(gatt)
                 var bundle = Bundle()
-                bundle.putParcelableArray(FOUNDSERVICES, gatt.services.toTypedArray())
-                sendMessage(SERVICESDISCOVERED)
+                bundle.putString(FOUNDSERVICES, formattedServices)
+                sendMessage(SERVICESDISCOVERED, bundle = bundle)
+                gatt.writeCharacteristic(radio_anti_dos)
             }
 
         }
@@ -158,25 +160,7 @@ class SparkService : Service() {
                 when (characteristic!!.uuid.toString()) {
                     ANTI_DOS_CHAR_UUID -> gatt!!.writeCharacteristic(radio_tx_pwr)
                     TX_PWR_CHAR_UUID -> gatt!!.writeCharacteristic(wakeup)
-                    WAKEUP_CHAR_UUID -> {
-                        sendMessage(CONNECTED)
-
-//                        robot_char_control.value = cmd
-//                        var status = gatt!!.writeCharacteristic(robot_char_control)
-//                        Log.d(TAG,"Set back led cmd sent, status:${status}, ${command.dump(cmd)}")
-
-//                        gatt?.let {
-//                            sendMessage(CONNECTED)
-//                        }
-//                        var cmd = command.setBackLedCmd(0x255.toByte())
-//                        robot_char_control.value = cmd
-//                        var status = gatt!!.writeCharacteristic(robot_char_control)
-//                        Log.d(TAG,"Set back led cmd sent, status:${status}, ${command.dump(cmd)}")
-
-//                        val bundle = Bundle()
-//                        bundle.putParcelableArray("services", gatt!!.services.toTypedArray())
-//                        sendMessage(SERVICESDISCOVERED, bundle = bundle)
-                    }
+                    WAKEUP_CHAR_UUID -> sendMessage(CONNECTED)
                     else -> {
                         Log.d(TAG, "Successful ${characteristic.uuid}")
                     }
@@ -235,6 +219,19 @@ class SparkService : Service() {
             wakeup.value = WAKEUP
         }
 
+    }
+
+    fun formatServices(gatt: BluetoothGatt): String {
+        val nameResolver = BleNamesResolver()
+        val sb = StringBuffer()
+        gatt.services
+                .forEach {
+                    sb.append("(Service): ${it.uuid} ${BleNamesResolver.resolveUuid(it.uuid.toString())}\n")
+                    it.characteristics
+                            .forEach { sb.append(">>(Characteristic): ${it.uuid} ${BleNamesResolver.resolveUuid(it.uuid.toString())}\n") }
+                     sb.append("\n")
+                }
+        return sb.toString()
     }
 
 }

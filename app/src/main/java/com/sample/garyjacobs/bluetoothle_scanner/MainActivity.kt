@@ -31,23 +31,6 @@ class MainActivity : AppCompatActivity(), BTItemSelected {
                 .addToBackStack(null)
                 .commit()
     }
-//    override fun OnBTItemSelected() {
-//        var bundle = Bundle()
-//        bundle.putParcelable(SparkService.DEVICEADDRESS, scanResult.device)
-//        var frag = SparkMainFragment()
-//        frag.arguments = bundle
-//        val fragmentManager = (view.context as Activity).fragmentManager
-//        fragmentManager.beginTransaction()
-//                .replace(R.id.main_container, frag)
-//                .addToBackStack(null)
-//                .commit()
-//        supportFragmentManager
-//                .beginTransaction()
-//                .replace(R.id.main_container, SparkMainFragment())
-//                .addToBackStack(null)
-//                .commit()
-//
-//    }
 }
 
 interface BTItemSelected {

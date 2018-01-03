@@ -2,9 +2,9 @@
 <android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:background="@android:color/background_light"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@android:color/background_light"
     android:textAlignment="inherit">
 
     <com.flask.colorpicker.ColorPickerView
@@ -78,36 +78,19 @@
         app:use_custom_radii="false" />
 
 
-    <ScrollView
-        android:id="@+id/service_sv"
+    <TextView
+        android:id="@+id/services_tf"
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
+        android:layout_height="0dp"
         android:layout_marginEnd="8dp"
         android:layout_marginStart="8dp"
-        android:scrollbarAlwaysDrawVerticalTrack="true"
+        android:scrollbars="vertical|horizontal"
+        android:textStyle="bold"
         app:layout_constraintBottom_toBottomOf="@+id/spin_sb"
-        app:layout_constraintEnd_toEndOf="@+id/back_led_sb"
-        app:layout_constraintHorizontal_bias="0.25"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/spin_sb"
-        app:layout_constraintTop_toTopOf="@+id/spin_sb"
-        app:layout_constraintVertical_bias="0.0">
+        app:layout_constraintTop_toTopOf="@+id/spin_sb" />
 
-        <FrameLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
 
-            <TextView
-                android:id="@+id/services_tf"
-                android:layout_width="165dp"
-                android:layout_height="113dp"
-                android:lines="10"
-                android:text="I was so much older then
-I'm younger than that
-now"
-                tools:layout_editor_absoluteX="238dp"
-                tools:layout_editor_absoluteY="482dp" />
 
-        </FrameLayout>
-    </ScrollView>
 </android.support.constraint.ConstraintLayout>
