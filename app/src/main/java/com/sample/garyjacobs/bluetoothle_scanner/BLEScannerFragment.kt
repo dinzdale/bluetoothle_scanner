@@ -1,7 +1,6 @@
 package com.sample.garyjacobs.bluetoothle_scanner
 
 import android.Manifest
-import android.app.Activity
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
 import android.bluetooth.le.ScanCallback
@@ -13,26 +12,25 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
-import android.support.annotation.RequiresApi
-import android.support.v4.app.Fragment
-import android.support.v4.content.ContextCompat
-import android.support.v7.app.AlertDialog
-import android.support.v7.widget.LinearLayoutCompat
-import android.support.v7.widget.LinearLayoutManager
-import android.support.v7.widget.RecyclerView
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.*
+import android.widget.SeekBar
+import android.widget.TextView
+import android.widget.Toast
+import androidx.annotation.RequiresApi
+import androidx.appcompat.app.AlertDialog
+import androidx.core.content.ContextCompat
+import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import kotlinx.android.synthetic.main.bluetooth_scanned_list.*
-
-import kotlin.collections.ArrayList
 
 /**
  * Created by garyjacobs on 9/5/17.
  */
-class BLEScannerFragment : Fragment() {
+class BLEScannerFragment : Fragment {
     val TAG = BLEScannerFragment::class.java.name
     val PERMISSION_REQUEST = 99
     var REQUEST_ENABLE_BT = 100
@@ -44,61 +42,66 @@ class BLEScannerFragment : Fragment() {
 
     lateinit var bluetoothAdapter: BluetoothAdapter
     var scanRecords: ArrayList<ScanResult> = ArrayList<ScanResult>()
+
+    constructor() : super()
+
     override fun onAttach(context: Context?) {
         super.onAttach(context)
         myActivity = activity as MainActivity
     }
 
-    override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater!!.inflate(R.layout.bluetooth_scanned_list, null) as View
     }
 
-    override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
 
         interval_infinity_button.setOnClickListener(intervalInfinityListener)
         scan_interval_seekbar.setOnSeekBarChangeListener(seekBarListener)
 
         val linearLayoutManager = LinearLayoutManager(this.activity)
-        linearLayoutManager.orientation = LinearLayoutCompat.VERTICAL
+        linearLayoutManager.orientation = RecyclerView.VERTICAL
         scan_results_listview.layoutManager = linearLayoutManager
         scan_results_listview.adapter = MyListAdapter(scanRecords, ListItemClickListener())
 
         setScanButtonLabel(scanning)
 
-        if (!this.activity.packageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
-            Toast.makeText(this.activity, "This device does not support BLE", Toast.LENGTH_LONG).show()
-            this.activity.finish()
-        } else {
-            @RequiresApi(Build.VERSION_CODES.M)
-            if (locationsGranted().not()) {
-                AlertDialog.Builder(this.context)
-                        .setTitle("This app needs location access")
-                        .setMessage("Please grant location access so this app can detect beacons.")
-                        .setPositiveButton(android.R.string.ok, null)
-                        .setOnDismissListener(object : DialogInterface.OnDismissListener {
-                            override fun onDismiss(dialogInterface: DialogInterface?) {
-                                requestPermissions(arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION), PERMISSION_REQUEST)
-                            }
-                        })
-                        .show()
+        activity?.let { activity ->
+            if (!activity.packageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
+                Toast.makeText(this.activity, "This device does not support BLE", Toast.LENGTH_LONG).show()
+                activity.finish()
+            } else {
+                @RequiresApi(Build.VERSION_CODES.M)
+                if (locationsGranted().not()) {
+                    AlertDialog.Builder(this.context!!)
+                            .setTitle("This app needs location access")
+                            .setMessage("Please grant location access so this app can detect beacons.")
+                            .setPositiveButton(android.R.string.ok, null)
+                            .setOnDismissListener(object : DialogInterface.OnDismissListener {
+                                override fun onDismiss(dialogInterface: DialogInterface?) {
+                                    requestPermissions(arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION), PERMISSION_REQUEST)
+                                }
+                            })
+                            .show()
+                }
+
+                Toast.makeText(this.context, "BLE Supported!!", Toast.LENGTH_LONG)
+                val bluetoothManager: BluetoothManager = activity.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+                bluetoothAdapter = bluetoothManager.adapter
+
             }
-
-            Toast.makeText(this.context, "BLE Supported!!", Toast.LENGTH_LONG)
-            val bluetoothManager: BluetoothManager = this.activity.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-            bluetoothAdapter = bluetoothManager.adapter
-
         }
 
         scan_startstop_button?.setOnClickListener(
-                object : View.OnClickListener {
-                    override fun onClick(view: View?) {
-                        scanRecords.clear()
-                        scan_results_listview.adapter.notifyDataSetChanged()
-                        scanning = scanning.not()
-                        setScanButtonLabel(scanning)
-                        scanBLEDevices(scanning)
-                    }
-                })
+            object : View.OnClickListener {
+                override fun onClick(view: View?) {
+                    scanRecords.clear()
+                    (scan_results_listview.adapter as MyListAdapter).notifyDataSetChanged()
+                    scanning = scanning.not()
+                    setScanButtonLabel(scanning)
+                    scanBLEDevices(scanning)
+                }
+            })
 
 
     }
@@ -190,15 +193,15 @@ class BLEScannerFragment : Fragment() {
             super.onScanResult(callbackType, result)
             result?.let {
                 val index = scanRecords.indexOfFirst({
-                    it.scanRecord.deviceName == result.scanRecord.deviceName && it.device.address == result.device.address
+                    it.scanRecord?.deviceName == result.scanRecord?.deviceName && it.device.address == result.device.address
                 })
                 if (index == -1) {
                     scanRecords.add(result)
-                    scan_results_listview.adapter.notifyDataSetChanged()
+                    scan_results_listview.adapter?.notifyDataSetChanged()
                 } else {
                     Log.i(TAG, "Updating ${result.scanRecord.toString()}")
                     scanRecords[index] = result
-                    scan_results_listview.adapter.notifyItemChanged(index)
+                    scan_results_listview.adapter?.notifyItemChanged(index)
                 }
             }
             Log.i(TAG, " ScanCallback: callbackType: $callbackType result: ${result.toString()}")
@@ -211,8 +214,8 @@ class BLEScannerFragment : Fragment() {
     }
 
     fun locationsGranted(): Boolean {
-        return ContextCompat.checkSelfPermission(this.activity, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
-                ContextCompat.checkSelfPermission(this.activity, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        return ContextCompat.checkSelfPermission(this.activity!!, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(this.activity!!, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
 
     }
 
@@ -250,21 +253,21 @@ class BLEScannerFragment : Fragment() {
     }
 
     class MyListAdapter(val scanResultList: ArrayList<ScanResult>, val listener: View.OnClickListener) : RecyclerView.Adapter<MyViewHolder>() {
-
-        override fun onCreateViewHolder(parent: ViewGroup?, viewType: Int): MyViewHolder {
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MyViewHolder {
             val view = LayoutInflater.from(parent!!.context).inflate(R.layout.scanned_item, null)
             view.setOnClickListener(listener)
             return MyViewHolder(view)
         }
 
-        override fun onBindViewHolder(holder: MyViewHolder?, position: Int) {
+        override fun onBindViewHolder(holder: MyViewHolder, position: Int) {
+
             holder?.let { viewHolder ->
                 val resources = viewHolder.deviceName.resources
                 val scanResult = scanResultList[position]
-                viewHolder.deviceName.text = resources.getString(R.string.device_name, scanResult.scanRecord.deviceName)
+                viewHolder.deviceName.text = resources.getString(R.string.device_name, scanResult.scanRecord?.deviceName)
                 viewHolder.deviceAddress.text = resources.getString(R.string.device_address, scanResult.device.address)
                 viewHolder.rssi.text = resources.getString(R.string.power_level, scanResult.rssi)
-                viewHolder.connectable.text = resources.getString(R.string.connectable, scanResult.scanRecord.advertiseFlags)
+                viewHolder.connectable.text = resources.getString(R.string.connectable, scanResult.scanRecord?.advertiseFlags)
             }
         }
 

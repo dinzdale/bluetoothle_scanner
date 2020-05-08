@@ -1,7 +1,6 @@
 package com.sample.garyjacobs.bluetoothle_scanner
 
-import android.app.AlertDialog
-import android.app.Fragment
+
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattService
@@ -20,6 +19,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.SeekBar
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
+import androidx.fragment.app.Fragment
 import com.sample.garyjacobs.bluetoothle_scanner.utils.sphero.Command
 import kotlinx.android.synthetic.main.spark_main_fragment.*
 
@@ -36,14 +37,16 @@ class SparkMainFragment() : Fragment() {
     var bound = false
     var connected = false
 
-    override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?): View {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater?.inflate(R.layout.spark_main_fragment, null)!!
     }
 
-    override fun onViewCreated(view: View?, savedInstanceState: Bundle?) {
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        device = arguments.getParcelable<BluetoothDevice>(SparkService.DEVICEADDRESS)
+        arguments?.getParcelable<BluetoothDevice>(SparkService.DEVICEADDRESS)?.let{
+            device = it
+        }
         color_picker_view.addOnColorChangedListener { color ->
             val red = Color.red(color).toByte()
             val green = Color.green(color).toByte()
@@ -98,7 +101,7 @@ class SparkMainFragment() : Fragment() {
 
         services_tf.movementMethod = ScrollingMovementMethod()
 
-        connectingDlg = AlertDialog.Builder(this.context)
+        connectingDlg = AlertDialog.Builder(this.context!!)
                 .setIcon(android.R.drawable.ic_dialog_alert)
                 .setMessage(R.string.connecting_warning)
                 .show()
@@ -118,7 +121,7 @@ class SparkMainFragment() : Fragment() {
         super.onResume()
         var intent = Intent(this.context, SparkService::class.java)
         intent.putExtra(SparkService.DEVICEADDRESS, device)
-        this.context.bindService(intent, serviceConnection, BIND_AUTO_CREATE)
+        context?.bindService(intent, serviceConnection, BIND_AUTO_CREATE)
     }
 
     override fun onPause() {
@@ -126,7 +129,7 @@ class SparkMainFragment() : Fragment() {
         connectingDlg?.dismiss()
         var intent = Intent(this.context, SparkService::class.java)
         intent.putExtra(SparkService.DEVICEADDRESS, device)
-        this.context.unbindService(serviceConnection)
+        this.context?.unbindService(serviceConnection)
     }
 
     inner class InboundHandler : Handler() {

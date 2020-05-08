@@ -2,9 +2,9 @@ package com.sample.garyjacobs.bluetoothle_scanner
 
 import android.app.Activity
 import android.os.Bundle
-import android.support.v4.app.Fragment
-import android.support.v4.app.FragmentManager
-import android.support.v7.app.AppCompatActivity
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentManager
+import androidx.appcompat.app.AppCompatActivity
 import android.widget.FrameLayout
 
 /**
@@ -26,7 +26,7 @@ class MainActivity : AppCompatActivity(), BTItemSelected {
     override fun OnBTItemSelected(bundle: Bundle) {
         var newFragment = SparkMainFragment()
         newFragment.arguments = bundle
-        fragmentManager.beginTransaction()
+        supportFragmentManager.beginTransaction()
                 .replace(R.id.main_container,newFragment)
                 .addToBackStack(null)
                 .commit()

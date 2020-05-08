@@ -7,4 +7,15 @@
     <string name="seekbar_label">"MINUTES: %1$d"</string>
     <string name="back_led_label">BACK LED</string>
     <string name="connecting_warning">Connecting to device...</string>
+    <string name="location_permissions_title">LOCATION PERMISSIONS REQUIRED</string>
+    <string name="location_permissions_denial_message">Location is required for routing, traffic alerts along your
+        route, as well as trip tracking to save completed drives.
+    </string>
+    <string name="denied_dialog_title">ENABLE APPLICATION PERMISSIONS</string>
+    <string name="perm_denied_dialog_message">Please enable the required permissions for this application by clicking
+        App Info below and then selecting Permissions.
+    </string>
+    <string name="some_permissions_denied_dialog_message">Please re-run application and enable outstanding required
+        permissions
+    </string>
 </resources>
