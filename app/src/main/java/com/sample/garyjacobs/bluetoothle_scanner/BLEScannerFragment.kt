@@ -169,11 +169,11 @@ class BLEScannerFragment : Fragment {
                 handler.postDelayed(stopScanningTask, minutesMillis(scan_interval_seekbar.progress + 1))
             }
             scanning = true
-            bluetoothAdapter.bluetoothLeScanner?.startScan(scanCallBack)
+            bluetoothAdapter.bluetoothLeScanner.startScan(scanCallBack)
         } else {
             // stop scan
             scanning = false
-            bluetoothAdapter.bluetoothLeScanner?.stopScan(scanCallBack)
+            bluetoothAdapter.bluetoothLeScanner.stopScan(scanCallBack)
         }
         setScanButtonLabel(scanning)
     }
